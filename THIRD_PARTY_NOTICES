@@ -1,0 +1,31 @@
+Ясно / Credit MVP — third-party components and simulated integrations
+
+Runtime:
+- CPython 3.12.10 and its standard library. Python Software Foundation License.
+  Official license: https://docs.python.org/3.12/license.html
+- SQLite, accessed through Python sqlite3. SQLite is in the public domain.
+  Official statement: https://www.sqlite.org/copyright.html
+  The embedded SQLite version is supplied by the selected Python build.
+- Docker base image: python:3.12.10-slim-bookworm, from Docker Official Images.
+  Includes Debian system components under their respective licenses; image notices
+  are normally available under /usr/share/doc/*/copyright in the container.
+  Base-image tag pins Python version, not an immutable OS-layer digest.
+- Docker / Docker Compose are optional developer/runtime tools, not vendored here.
+
+Frontend:
+- Plain HTML, CSS and JavaScript. No npm libraries, CDNs or downloaded fonts.
+- System fonts are used from the user's operating system.
+
+Models, datasets, external services:
+- No trained ML model, LLM, model weights or third-party dataset is included.
+- All demo profiles, tax-id strings, rates and thresholds are fictional.
+- Company registry and credit-bureau checks are deterministic local simulations
+  in scoring.py, not integrations with FNS, EGRUL/EGRIP, BKI or Alfa-Bank.
+- Authentication is simulated with fixed demo accounts.
+- Signing, lending offers and disbursement are simulated; no documents are signed
+  with legal effect and no money moves.
+
+The case description provided by the user informed the prototype. Its PDF,
+bank logos and third-party presentation assets are not redistributed here.
+
+No source-code license for the team's own work is imposed by this notices file.
