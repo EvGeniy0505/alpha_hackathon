@@ -1,0 +1,65 @@
+@base = http://localhost:8000
+# HTTP-клиент должен сохранять cookie session из ответа login.
+# VS Code REST Client: включите cookie jar. Для curl используйте -c cookies.txt -b cookies.txt.
+
+### Health
+GET {{base}}/health
+
+### Login client
+POST {{base}}/api/login
+Content-Type: application/json
+
+{"username":"client","password":"demo-pass-2026"}
+
+### Products
+GET {{base}}/api/products
+
+### Preview: financial rejection with a possible alternative
+POST {{base}}/api/preview
+Content-Type: application/json
+
+{"company_name":"ООО Учебный Пекарь","tax_id":"7700000001","product_id":"working_capital","amount":600000,"term_months":12,"purpose":"Закупка сырья для пекарни","revenue_monthly":60000,"expenses_monthly":10000,"existing_payment":0,"business_months":36,"consent":true}
+
+### Create an automatically approved application
+# @name created
+POST {{base}}/api/applications
+Content-Type: application/json
+
+{"company_name":"ООО Учебный Пекарь","tax_id":"7700000001","product_id":"working_capital","amount":600000,"term_months":12,"purpose":"Закупка сырья для пекарни","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":100000,"business_months":36,"consent":true}
+
+### Submit (VS Code REST Client uses the preceding named response)
+POST {{base}}/api/applications/{{created.response.body.$.id}}/submit
+Content-Type: application/json
+
+{}
+
+### Accept simulated offer
+POST {{base}}/api/applications/{{created.response.body.$.id}}/accept
+Content-Type: application/json
+
+{}
+
+### List
+GET {{base}}/api/applications
+
+### Login bank (replaces the current cookie)
+POST {{base}}/api/login
+Content-Type: application/json
+
+{"username":"analyst","password":"demo-pass-2026"}
+
+### Bank queue
+GET {{base}}/api/applications
+
+### Request clarification: replace id with a manual_review application
+@reviewId = REPLACE_WITH_MANUAL_REVIEW_ID
+POST {{base}}/api/applications/{{reviewId}}/decision
+Content-Type: application/json
+
+{"action":"request_info","note":"Поясните причину учебной просрочки и её текущий статус."}
+
+### Logout
+POST {{base}}/api/logout
+Content-Type: application/json
+
+{}
