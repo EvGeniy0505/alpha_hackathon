@@ -16,22 +16,21 @@
   </header>
   <main id="login-screen" class="login-screen">
     <section class="intro">
-      <span class="eyebrow">КРЕДИТ БЕЗ ЧЁРНОГО ЯЩИКА</span>
       <h1>Понятно, почему.<br>Ясно, что дальше.</h1>
       <p>Проверьте параметры до подачи заявки. Узнайте причины решения и посмотрите, что изменится при другой сумме или сроке.</p>
       <div class="intro-steps"><span>01 <b>Заполнить</b></span><span>02 <b>Сравнить</b></span><span>03 <b>Отправить</b></span></div>
-      <div class="hero-note"><span aria-hidden="true">↗</span><p><b>Не просто ответ. Следующий шаг.</b><br>Если условия не подходят, покажем доступный сценарий — когда он есть.</p></div>
+      <div class="hero-note"><p><b>Не просто ответ. Следующий шаг.</b><br>Если условия не подходят, покажем доступный сценарий — когда он есть.</p></div>
     </section>
     <section class="login-card card">
-      <span class="eyebrow">ДЕМОНСТРАЦИОННЫЙ КАБИНЕТ</span>
+      <span class="eyebrow">КРЕДИТНЫЙ КАБИНЕТ</span>
       <h2>Войти в Ясно</h2>
-      <p class="muted">Выберите роль и пройдите весь путь заявки.</p>
       <form id="login-form">
-        <label>Участник<select name="username"><option value="client">Клиент · первый бизнес</option><option value="client2">Клиент · второй бизнес</option><option value="analyst">Банк · кредитный аналитик</option></select></label>
-        <label>Пароль<input type="password" name="password" value="demo-pass-2026" autocomplete="current-password" required></label>
+        <label>Логин<input name="username" value="client" autocomplete="username" required maxlength="64"></label>
+        <label>Пароль<input type="password" name="password" value="client-pass" autocomplete="current-password" required></label>
         <button class="primary full" type="submit">Открыть кабинет <span aria-hidden="true">→</span></button>
       </form>
-      <p class="small muted">Демо-пароль для всех ролей: <code>demo-pass-2026</code></p>
+      <details class="account-help"><summary>Тестовые учётные записи</summary><p class="small muted">Клиенты: <code>client / client-pass</code>, затем <code>client2 / client2-pass</code> … <code>client10 / client10-pass</code>.<br>Сотрудник банка: <code>analyst / analyst-pass</code>.</p></details>
+      <p class="service-warning">Сайт не является банком и не предоставляет реальные банковские услуги.</p>
     </section>
   </main>
   <main id="workspace" hidden></main>

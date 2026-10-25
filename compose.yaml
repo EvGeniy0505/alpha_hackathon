@@ -4,7 +4,6 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     environment:
-      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-pass-2026}
       ALLOWED_HOSTS: localhost,127.0.0.1
     volumes:
       - credit-data:/app/runtime

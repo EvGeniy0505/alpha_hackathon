@@ -2,10 +2,8 @@
   {
     "id": "approved",
     "label": "Одобрение: стабильный бизнес",
-    "description": "Синтетическая компания с запасом денежного потока и без просрочки.",
+    "description": "Стабильная компания с финансовым запасом и без просрочки.",
     "application": {
-      "company_name": "ООО Учебный Пекарь",
-      "tax_id": "7700000001",
       "product_id": "working_capital",
       "amount": 600000,
       "term_months": 12,
@@ -13,35 +11,29 @@
       "revenue_monthly": 1500000,
       "expenses_monthly": 1000000,
       "existing_payment": 100000,
-      "business_months": 36,
       "consent": true
     }
   },
   {
     "id": "manual_review",
     "label": "Ручная проверка: молодой бизнес",
-    "description": "Синтетическая компания моложе года с небольшой учебной просрочкой.",
+    "description": "Компания моложе года с небольшой текущей просрочкой.",
     "application": {
-      "company_name": "ООО Учебная Мастерская",
-      "tax_id": "7700000002",
       "product_id": "working_capital",
       "amount": 1200000,
       "term_months": 24,
       "purpose": "Закупка материалов для мастерской",
-      "revenue_monthly": 800000,
+      "revenue_monthly": 780000,
       "expenses_monthly": 650000,
       "existing_payment": 50000,
-      "business_months": 9,
       "consent": true
     }
   },
   {
     "id": "rejected",
     "label": "Отказ: недостаточный денежный поток",
-    "description": "Синтетическая неактивная компания с просрочкой и недостатком потока.",
+    "description": "Компания с неподтверждённым статусом, просрочкой и недостатком средств для платежа.",
     "application": {
-      "company_name": "ООО Учебный Склад",
-      "tax_id": "7700000003",
       "product_id": "working_capital",
       "amount": 1500000,
       "term_months": 12,
@@ -49,7 +41,6 @@
       "revenue_monthly": 500000,
       "expenses_monthly": 400000,
       "existing_payment": 50000,
-      "business_months": 24,
       "consent": true
     }
   }
