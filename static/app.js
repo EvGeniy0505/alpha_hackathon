@@ -9,6 +9,9 @@ let user = null, products = [], profiles = [], applications = [], clients = [], 
 let current = null, preview = null, stress = null, busy = false, noticeTimer, activeView = 'applications';
 const bankFilters = {query:'', status:'', client:''};
 let creditHelper = {step:0, answers:{}};
+const freshAdvisor = () => ({messages:[], productId:null, amount:null, term:null, purpose:'', pending:false, requestId:0, quickReplies:[]});
+let advisor = freshAdvisor();
+let advisorRequestSequence = 0;
 const collateralNames = {
   none:'Без залога', real_estate:'Недвижимость', equipment:'Оборудование', vehicle:'Транспорт',
   deposit:'Денежный депозит', purchased_asset:'Приобретаемый объект', msp_guarantee:'Поручительство Корпорации МСП / РГО'
@@ -64,32 +67,35 @@ async function act(fn) {
 }
 function renderSession() {
   $('#login-screen').hidden = !!user; $('#workspace').hidden = !user;
-  $('#session').innerHTML = user ? `<span>${user.role === 'bank' ? 'Банк · аналитик' : 'Клиент · ' + esc(user.username)}</span><button id="logout">Выйти</button>` : '';
+  $('.skip-link').href = user ? '#workspace' : '#main-content';
+  $('#session').innerHTML = user ? `<span class="session-avatar" aria-hidden="true">${user.role === 'bank' ? 'А' : 'К'}</span><span>${user.role === 'bank' ? 'Сотрудник банка' : esc(clientProfile?.company_name || user.username)}</span><button id="logout">Выйти</button>` : '<span class="login-session-note">Кабинет предпринимателя</span>';
   if (user) $('#logout').onclick = () => act(async () => {
-    await api('/api/logout','POST',{}); user = null; current = null; preview = null; stress = null; applications = []; clients = []; clientProfile = null;
-    $('#workspace').innerHTML = ''; $('#notice').hidden = true; renderSession();
+    await api('/api/logout','POST',{}); user = null; current = null; preview = null; stress = null; applications = []; clients = []; clientProfile = null; advisor = freshAdvisor();
+    $('#workspace').innerHTML = ''; $('#notice').hidden = true; history.replaceState(null, '', '/login'); renderSession();
   });
 }
 async function enter() {
   [products, profiles, applications] = await Promise.all([api('/api/products').then(r => r.products), api('/api/demo-profiles').then(r => r.profiles), api('/api/applications').then(r => r.applications)]);
   if (user.role === 'client') clientProfile = (await api('/api/client-profile')).client;
   else clients = (await api('/api/clients')).clients;
-  current = null; preview = null; stress = null; activeView = 'applications'; renderSession(); renderWorkspace();
+  current = null; preview = null; stress = null; activeView = user.role === 'client' ? 'advisor' : 'applications'; history.replaceState(null, '', '/cabinet'); renderSession(); renderWorkspace(); scrollPageToTop();
 }
 
 function renderWorkspace() {
   const bank = user.role === 'bank';
+  $('#workspace').classList.toggle('advisor-mode', activeView === 'advisor');
   const titles = bank ? {
-    applications:['РАБОЧЕЕ МЕСТО БАНКА','Последние заявки','Поиск, проверка и решения по заявкам клиентов.'],
-    clients:['КЛИЕНТСКАЯ БАЗА','Клиенты банка','Реквизиты компаний и история обращений каждого клиента.']
+    applications:['Последние заявки','Поиск, проверка и решения по заявкам клиентов.'],
+    clients:['Клиенты банка','Реквизиты компаний и история обращений каждого клиента.']
   } : {
-    applications:['ВАШ БИЗНЕС. ПОНЯТНЫЕ ВОЗМОЖНОСТИ.','Кредитный кабинет',''],
-    profile:['ДАННЫЕ КОМПАНИИ','Профиль компании','Эти сведения автоматически используются при подаче заявки.']
+    advisor:['Кредитный советчик','Обсудите задачу и соберите условия для заявки.'],
+    applications:['Заявки на финансирование','Выберите продукт, заполните данные и следите за решением.'],
+    profile:['Профиль компании','Эти сведения автоматически используются при подаче заявки.']
   };
-  const [eyebrow, title, subtitle] = titles[activeView];
-  const tabs = bank ? [['applications','Заявки'],['clients','Клиенты']] : [['applications','Заявки'],['profile','Данные компании']];
+  const [title, subtitle] = titles[activeView];
+  const tabs = bank ? [['applications','Заявки'],['clients','Клиенты']] : [['advisor','Советчик'],['applications','Заявки'],['profile','Данные компании']];
   const reviewCount = applications.filter(app => app.status === 'manual_review').length;
-  $('#workspace').innerHTML = `<div class="workspace-heading"><div><span class="eyebrow">${eyebrow}</span><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${!bank && activeView === 'applications' ? '<button class="accent" id="new">+ Новая заявка</button>' : ''}</div>${bank ? `<button type="button" class="review-overview" id="review-overview"><span><b>${reviewCount}</b> ${reviewCount === 1 ? 'заявка требует' : 'заявок требуют'} решения</span><small>Открыть очередь ручного рассмотрения →</small></button>` : ''}<nav class="portal-tabs" aria-label="Разделы кабинета">${tabs.map(([view,label]) => `<button class="${activeView === view ? 'active' : ''}" data-view="${view}">${label}</button>`).join('')}</nav><div id="workspace-content"></div>`;
+  $('#workspace').innerHTML = `<div class="workspace-heading ${activeView === 'advisor' ? 'advisor-workspace-heading' : ''}"><div><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${!bank && activeView === 'applications' ? '<button class="accent" id="new">+ Новая заявка</button>' : ''}</div>${bank ? `<button type="button" class="review-overview" id="review-overview"><span>Ожидают решения: <b>${reviewCount}</b></span><small>Открыть очередь ручного рассмотрения</small></button>` : ''}<nav class="portal-tabs" aria-label="Разделы кабинета">${tabs.map(([view,label]) => `<button class="${activeView === view ? 'active' : ''}" data-view="${view}">${label}</button>`).join('')}</nav><div id="workspace-content"></div>`;
   document.querySelectorAll('[data-view]').forEach(button => { button.onclick = () => {
     activeView = button.dataset.view; current = null; preview = null; stress = null; renderWorkspace();
   }; });
@@ -97,6 +103,7 @@ function renderWorkspace() {
     activeView = 'applications'; bankFilters.client = ''; bankFilters.status = 'manual_review'; current = null; renderWorkspace();
   };
   if (activeView === 'applications') renderApplicationsWorkspace();
+  else if (activeView === 'advisor') renderAdvisorView();
   else if (activeView === 'profile') renderProfileView();
   else renderClientsView();
 }
@@ -104,7 +111,7 @@ function renderWorkspace() {
 function renderApplicationsWorkspace() {
   const bank = user.role === 'bank';
   const filterPanel = bank ? `<section class="bank-filter-panel"><div class="application-filters"><label>Поиск<input id="application-search" value="${esc(bankFilters.query)}" placeholder="Название компании или ИНН"></label><label>Статус<select id="status-filter"><option value="">Все статусы</option>${[['approved','Одобренные'],['manual_review','Требуют рассмотрения'],['needs_info','Нужно уточнение'],['rejected','Отказы'],['draft','Черновики'],['funded','Завершённые']].map(([value,label]) => `<option value="${value}" ${bankFilters.status === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>${bankFilters.client ? `<button type="button" class="filter-chip" id="clear-client-filter">Клиент: ${esc(clients.find(item => item.username === bankFilters.client)?.company_name || bankFilters.client)} ×</button>` : ''}</div></section>` : '';
-  const list = `<aside class="sidebar ${bank && !current ? 'expanded-sidebar' : ''}"><div class="sidebar-title"><b>${bank ? 'Найденные заявки' : 'Мои заявки'}</b><span class="count" id="count"></span></div><nav class="application-list ${bank && !current ? 'expanded-list' : ''}" id="application-list" aria-label="Заявки"></nav></aside>`;
+  const list = `<aside class="sidebar ${bank && !current ? 'expanded-sidebar' : ''}"><div class="sidebar-title"><b>${bank ? 'Найденные заявки' : 'Мои заявки'}</b><span class="count" id="count"></span></div><nav class="application-list ${bank && !current ? 'expanded-list' : ''}" id="application-list" aria-label="Заявки"></nav>${!bank ? '<section class="sidebar-help"><h3>Работа с черновиком</h3><p>Сначала выберите продукт и укажите параметры. Затем добавьте документы и проверьте заявку перед отправкой.</p><p>Черновик можно сохранить и продолжить позже.</p></section>' : ''}</aside>`;
   $('#workspace-content').innerHTML = bank && !current ? `${filterPanel}<div class="expanded-applications">${list}</div>` : `${filterPanel}<div class="workspace-grid">${list}<section class="detail card" id="detail"></section></div>`;
   if ($('#new')) $('#new').onclick = () => { current = null; preview = null; stress = null; renderList(); renderDetail(); };
   if (bank) {
@@ -133,8 +140,8 @@ function renderList() {
   const expanded = user.role === 'bank' && !current;
   root.innerHTML = visible.length ? visible.map(app => {
     const product = products.find(item => item.id === app.data.product_id);
-    return expanded ? `<button class="application-overview" data-id="${esc(app.id)}"><span class="overview-company"><strong>${esc(app.client?.company_name || app.owner)}</strong><small>${esc(app.client?.organization_type || '')} · ИНН ${esc(app.client?.tax_id || '—')}</small></span><span>${badge(app.status)}<small>${esc(new Date(app.created_at).toLocaleDateString('ru-RU'))}</small></span><span><small>Продукт</small><b>${esc(product?.name || app.data.product_id)}</b></span><span><small>Сумма и срок</small><b>${money(app.data.amount)} · ${esc(app.data.term_months)} мес.</b></span><span><small>Выручка</small><b>${money(app.data.revenue_monthly)}</b></span><span class="overview-arrow">→</span></button>` : `<button class="application-item ${current?.id === app.id ? 'selected' : ''}" data-id="${esc(app.id)}"><strong>${esc(app.client?.company_name || app.owner)}</strong>${badge(app.status)}<span class="item-meta"><span>${money(app.data.amount)}</span><span>№ ${esc(String(app.id).slice(0,8))}</span></span></button>`;
-  }).join('') : '<div class="empty">По выбранным условиям заявок нет.</div>';
+    return expanded ? `<button class="application-overview" data-id="${esc(app.id)}"><span class="overview-company"><strong>${esc(app.client?.company_name || app.owner)}</strong><small>${esc(app.client?.organization_type || '')} · ИНН ${esc(app.client?.tax_id || '—')}</small></span><span>${badge(app.status)}<small>${esc(new Date(app.created_at).toLocaleDateString('ru-RU'))}</small></span><span><small>Продукт</small><b>${esc(product?.name || app.data.product_id)}</b></span><span><small>Сумма и срок</small><b>${money(app.data.amount)} · ${esc(app.data.term_months)} мес.</b></span><span><small>Выручка</small><b>${money(app.data.revenue_monthly)}</b></span><span class="overview-open">Открыть</span></button>` : `<button class="application-item ${current?.id === app.id ? 'selected' : ''}" data-id="${esc(app.id)}"><strong>${esc(app.client?.company_name || app.owner)}</strong>${badge(app.status)}<span class="item-meta"><span>${money(app.data.amount)}</span><span>№ ${esc(String(app.id).slice(0,8))}</span></span></button>`;
+  }).join('') : `<div class="empty">${user.role === 'bank' ? 'По выбранным условиям заявок нет.' : '<b>Здесь будут ваши заявки</b><p>Создайте первую — её статус и ответ банка появятся в этом разделе.</p>'}</div>`;
   root.querySelectorAll('button').forEach(button => { button.onclick = () => act(async () => {
     current = await api('/api/applications/' + encodeURIComponent(button.dataset.id)); preview = null; stress = null;
     if (user.role === 'bank') renderApplicationsWorkspace(); else { renderList(); renderDetail(); }
@@ -143,7 +150,7 @@ function renderList() {
 
 function renderProfileView() {
   const p = clientProfile;
-  $('#workspace-content').innerHTML = `<section class="profile-card card"><div class="profile-intro"><div><span class="eyebrow">ПОСТОЯННЫЕ СВЕДЕНИЯ</span><h2>${esc(p.company_name)}</h2><p>Изменения будут использоваться в новых заявках.</p></div><span class="profile-login">Логин: ${esc(p.username)}</span></div><form id="profile-form"><div class="profile-fields"><label>Название компании<input name="company_name" value="${esc(p.company_name)}" required maxlength="120"></label><label>ИНН<input name="tax_id" value="${esc(p.tax_id)}" required pattern="[0-9]{10}([0-9]{2})?"></label><label>Вид организации<select name="organization_type">${['ИП','ООО','АО','ПАО','Самозанятый'].map(value => `<option ${p.organization_type === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label><label>Возраст бизнеса, мес.<input name="business_months" type="number" min="0" max="1200" step="1" value="${esc(p.business_months)}" required></label><label>Сфера деятельности<input name="industry" value="${esc(p.industry)}" required maxlength="120"></label><label>Средняя выручка за последние 6 месяцев, ₽<input name="average_revenue_6m" type="number" min="0" max="10000000000" step="0.01" value="${esc(p.average_revenue_6m)}" required></label><label>Контактное лицо<input name="contact_name" value="${esc(p.contact_name)}" required maxlength="120"></label><label>Телефон<input name="phone" value="${esc(p.phone)}" required maxlength="40"></label><label>Email<input name="email" type="email" value="${esc(p.email)}" required maxlength="120"></label><label class="wide">Юридический адрес<input name="legal_address" value="${esc(p.legal_address)}" required maxlength="300"></label></div><div class="form-actions"><button class="primary" type="submit">Сохранить данные</button></div></form></section>`;
+  $('#workspace-content').innerHTML = `<section class="profile-card card"><div class="profile-intro"><div><h2>${esc(p.company_name)}</h2><p>Изменения будут использоваться в новых заявках.</p></div><span class="profile-login">Логин: ${esc(p.username)}</span></div><form id="profile-form"><div class="profile-fields"><label>Название компании<input name="company_name" value="${esc(p.company_name)}" required maxlength="120"></label><label>ИНН<input name="tax_id" value="${esc(p.tax_id)}" required pattern="[0-9]{10}([0-9]{2})?"></label><label>Вид организации<select name="organization_type">${['ИП','ООО','АО','ПАО','Самозанятый'].map(value => `<option ${p.organization_type === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label><label>Возраст бизнеса, мес.<input name="business_months" type="number" min="0" max="1200" step="1" value="${esc(p.business_months)}" required></label><label>Сфера деятельности<input name="industry" value="${esc(p.industry)}" required maxlength="120"></label><label>Средняя выручка за последние 6 месяцев, ₽<input name="average_revenue_6m" type="number" min="0" max="10000000000" step="0.01" value="${esc(p.average_revenue_6m)}" required></label><label>Контактное лицо<input name="contact_name" value="${esc(p.contact_name)}" required maxlength="120"></label><label>Телефон<input name="phone" value="${esc(p.phone)}" required maxlength="40"></label><label>Email<input name="email" type="email" value="${esc(p.email)}" required maxlength="120"></label><label class="wide">Юридический адрес<input name="legal_address" value="${esc(p.legal_address)}" required maxlength="300"></label></div><div class="form-actions"><button class="primary" type="submit">Сохранить данные</button></div></form></section>`;
   $('#profile-form').onsubmit = event => { event.preventDefault(); act(async () => {
     const data = Object.fromEntries(new FormData(event.target));
     data.business_months = Number(data.business_months); data.average_revenue_6m = Number(data.average_revenue_6m);
@@ -164,6 +171,70 @@ function renderClientsView() {
     }; });
   };
   $('#client-search').oninput = draw; draw();
+}
+function renderAdvisorView() {
+  const offer = CreditAdvisor.recommendation(advisor, products);
+  const product = products.find(item => item.id === advisor.productId);
+  const started = advisor.messages.length > 0;
+  const quickReplies = started ? advisor.quickReplies : [
+    'Нужно закупить товар', 'Хочу купить оборудование', 'Нужно закрыть кассовый разрыв', 'Какие документы нужны?'
+  ];
+  const welcome = '<div class="advisor-welcome"><h2>На что нужны деньги?</h2><p>Расскажите Пушу о задаче, сумме и сроке.<br>Или начните с одного из вопросов.</p></div>';
+  const messages = advisor.messages.map(message => `<article class="chat-message ${message.role === 'user' ? 'from-user' : 'from-advisor'}">${message.role === 'assistant' ? '<span class="message-avatar" aria-hidden="true"><img src="/push.png" alt=""></span>' : ''}<div><span class="message-author">${message.role === 'user' ? 'Вы' : 'Пуш'}</span><p>${esc(message.text)}</p></div></article>`).join('');
+  $('#workspace-content').innerHTML = `<div class="advisor-layout"><section class="advisor-chat" aria-label="Кредитный советчик Пуш"><header class="advisor-chat-header"><span class="advisor-avatar" aria-hidden="true"><img src="/push.png" alt=""></span><div><h2>Пуш</h2><p>Помощник по финансированию</p></div><button type="button" id="advisor-reset" ${!started || advisor.pending ? 'disabled' : ''}>Начать заново</button></header>
+    <div class="advisor-conversation" id="advisor-conversation">${started ? `<div class="chat-messages" role="log" aria-label="Диалог с Пушем" aria-live="polite">${messages}${advisor.pending ? '<p class="advisor-thinking" role="status">Пуш готовит ответ…</p>' : ''}</div>` : welcome}
+    <div class="advisor-quick ${started ? '' : 'welcome-quick'}" aria-label="Быстрые вопросы">${quickReplies.map((text,index) => `<button type="button" data-advisor-prompt="${index}" ${advisor.pending ? 'disabled' : ''}><span>${esc(text)}</span></button>`).join('')}</div></div>
+    ${offer ? '<button type="button" class="primary chat-next-action" id="advisor-continue">Перейти к заявке</button>' : ''}<div class="advisor-composer"><form id="advisor-form"><label class="visually-hidden" for="advisor-message">Сообщение советчику</label><textarea id="advisor-message" name="message" rows="1" maxlength="1000" placeholder="Напишите Пушу…" ${advisor.pending ? 'disabled' : ''}></textarea><button type="submit" class="primary" aria-label="Отправить сообщение" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></form><p><span class="demo-dot" aria-hidden="true"></span>Демо-диалог · Ответы по готовым сценариям</p></div></section>
+    <aside class="advisor-sidebar"><section class="advisor-summary"><div class="advisor-summary-heading"><span class="summary-label">Условия заявки</span><span class="summary-status ${offer ? 'ready' : ''}">${offer ? 'Подобраны' : 'Подбираем'}</span></div><h2>${product ? esc(product.name) : 'Начнём с вашей задачи'}</h2><p>${product ? esc(product.description) : 'Условия появятся здесь по ходу разговора. Их можно будет перенести в заявку.'}</p><dl><div><dt>Сумма</dt><dd>${advisor.amount !== null ? money(advisor.amount) : 'Пока не указана'}</dd></div><div><dt>Срок</dt><dd>${advisor.term !== null ? esc(advisor.term) + ' мес.' : 'Пока не указан'}</dd></div>${product ? `<div><dt>Ставка в демо</dt><dd>${esc(product.annual_rate)}% годовых</dd></div>` : ''}</dl><div class="advisor-payment"><span>Платёж в месяц</span><strong>${offer ? money(offer.monthlyPayment) : '—'}</strong><small>${offer ? 'Предварительно, без учёта обеспечения' : 'Рассчитаем после выбора суммы и срока'}</small></div><button type="button" class="primary full" id="advisor-apply" ${offer ? '' : 'disabled'}><span>Перейти к заявке</span></button><p class="advisor-estimate-note">Расчёт демонстрационный. Решение будет доступно после проверки заявки.</p></section>
+    <section class="advisor-next"><h3>Что дальше</h3><ol><li class="${product ? 'done' : 'active'}"><span>1</span><div><b>Обсудим задачу</b><p>Подберём вид финансирования</p></div></li><li class="${offer ? 'done' : product ? 'active' : ''}"><span>2</span><div><b>Соберём условия</b><p>Сумма, срок и платёж</p></div></li><li><span>3</span><div><b>Перейдём к заявке</b><p>Проверите данные и добавите документы</p></div></li></ol></section><p class="advisor-help-note">Пуш помогает с выбором.<br>Окончательное решение — после проверки данных.</p></aside></div>`;
+  $('#advisor-form').onsubmit = event => { event.preventDefault(); sendAdvisorMessage($('#advisor-message').value); };
+  $('#advisor-message').oninput = event => { $('#advisor-form button').disabled = advisor.pending || !event.target.value.trim(); };
+  $('#advisor-message').onkeydown = event => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('#advisor-form').requestSubmit(); }
+  };
+  document.querySelectorAll('[data-advisor-prompt]').forEach(button => {
+    button.onclick = () => sendAdvisorMessage(quickReplies[Number(button.dataset.advisorPrompt)]);
+  });
+  $('#advisor-reset').onclick = () => { advisor = {...freshAdvisor(), requestId:++advisorRequestSequence}; renderAdvisorView(); };
+  $('#advisor-apply').onclick = applyAdvisorRecommendation;
+  if ($('#advisor-continue')) $('#advisor-continue').onclick = applyAdvisorRecommendation;
+  if (started) $('#advisor-conversation').scrollTop = $('#advisor-conversation').scrollHeight;
+}
+// Future model integration has one boundary; the UI and form handoff stay the same.
+async function requestAdvisorReply(message, context) {
+  return CreditAdvisor.reply(message, context, products);
+}
+async function sendAdvisorMessage(value) {
+  const message = String(value || '').trim();
+  if (!message || advisor.pending || !user || user.role !== 'client') return;
+  if (message.length > 1000) { notify('Сообщение должно быть не длиннее 1000 символов.', true); return; }
+  if (advisor.messages.length >= 40) { notify('Для новой задачи начните диалог заново.'); return; }
+  const account = user.username, requestId = ++advisorRequestSequence;
+  advisor.requestId = requestId;
+  advisor.messages.push({role:'user', text:message}); advisor.pending = true; advisor.quickReplies = [];
+  renderAdvisorView();
+  try {
+    const context = {productId:advisor.productId, amount:advisor.amount, term:advisor.term, purpose:advisor.purpose};
+    const result = await requestAdvisorReply(message, context);
+    if (user?.username !== account || advisor.requestId !== requestId) return;
+    Object.assign(advisor, result.state);
+    advisor.messages.push({role:'assistant', text:result.answer}); advisor.quickReplies = result.quickReplies || [];
+  } catch (_) {
+    if (user?.username !== account || advisor.requestId !== requestId) return;
+    advisor.messages.push({role:'assistant', text:'Не удалось подготовить ответ. Попробуйте задать вопрос ещё раз.'});
+  } finally {
+    if (user?.username === account && advisor.requestId === requestId) {
+      advisor.pending = false;
+      if (activeView === 'advisor') { renderAdvisorView(); $('#advisor-message').focus({preventScroll:true}); }
+    }
+  }
+}
+function applyAdvisorRecommendation() {
+  const offer = CreditAdvisor.recommendation(advisor, products);
+  if (!offer || advisor.pending) return;
+  current = null; preview = null; stress = null; activeView = 'applications'; renderWorkspace();
+  renderDetail({...blank(), product_id:offer.product.id, amount:offer.amount, term_months:offer.term, purpose:advisor.purpose});
+  scrollPageToTop(); notify('Условия перенесены. Проверьте данные и добавьте документы.');
 }
 function field(name, title, value, type = 'number', extra = '') {
   return `<label>${title}<input name="${name}" type="${type}" value="${esc(value)}" ${extra} ${editable() ? '' : 'disabled'}></label>`;
@@ -322,7 +393,7 @@ function processTracker(status = 'draft') {
 }
 function productCatalog(selectedId) {
   const categories = [...new Set(products.map(product => product.category))];
-  return categories.map(category => `<section class="product-group"><div class="product-group-title"><h4>${esc(category)}</h4><span>${products.filter(product => product.category === category).length} вариантов</span></div><div class="product-options">${products.filter(product => product.category === category).map(product => `<label class="product-option"><input type="radio" name="product_id" value="${esc(product.id)}" ${product.id === selectedId ? 'checked' : ''}><span class="product-option-body"><span class="product-option-heading"><strong>${esc(product.name)}</strong><b>${esc(product.annual_rate)}% годовых</b></span><span>${esc(product.description)}</span><small>${money(product.min_amount)}–${money(product.max_amount)} · ${esc(product.min_term)}–${esc(product.max_term)} мес.${product.manual_review ? ' · решение специалиста' : ''}</small></span></label>`).join('')}</div></section>`).join('');
+  return categories.map(category => `<details class="product-group" ${products.some(product => product.category === category && product.id === selectedId) ? 'open' : ''}><summary class="product-group-title"><span>${esc(category)}</span><small>${products.filter(product => product.category === category).length} вар.</small></summary><div class="product-options">${products.filter(product => product.category === category).map(product => `<label class="product-option"><input type="radio" name="product_id" value="${esc(product.id)}" ${product.id === selectedId ? 'checked' : ''}><span class="product-option-body"><span class="product-option-heading"><strong>${esc(product.name)}</strong><b>${esc(product.annual_rate)}% годовых</b></span><span>${esc(product.description)}</span><small>${money(product.min_amount)}–${money(product.max_amount)} · ${esc(product.min_term)}–${esc(product.max_term)} мес.${product.manual_review ? ' · решение специалиста' : ''}</small></span></label>`).join('')}</div></details>`).join('');
 }
 const helperQuestions = [
   {
@@ -351,10 +422,10 @@ function renderCreditHelper() {
   const root = $('#credit-helper'); if (!root) return;
   if (creditHelper.step >= helperQuestions.length) {
     const product = products.find(item => item.id === helperRecommendation());
-    root.innerHTML = `<div class="helper-result"><span class="eyebrow">РЕКОМЕНДАЦИЯ</span><h4>${esc(product?.name || '')}</h4><p>${esc(product?.description || '')}</p><div class="helper-result-meta"><span>Ориентир ставки: <b>${esc(product?.annual_rate)}% годовых</b></span><span>Срок: <b>${esc(product?.min_term)}–${esc(product?.max_term)} мес.</b></span></div><div class="helper-actions"><button type="button" id="helper-back">← Назад</button><button type="button" class="primary" id="helper-apply">Выбрать этот вид кредита</button></div></div>`;
+    root.innerHTML = `<div class="helper-result"><span class="eyebrow">РЕКОМЕНДАЦИЯ</span><h4>${esc(product?.name || '')}</h4><p>${esc(product?.description || '')}</p><div class="helper-result-meta"><span>Ориентир ставки: <b>${esc(product?.annual_rate)}% годовых</b></span><span>Срок: <b>${esc(product?.min_term)}–${esc(product?.max_term)} мес.</b></span></div><div class="helper-actions"><button type="button" id="helper-back">Назад</button><button type="button" class="primary" id="helper-apply">Выбрать этот вид кредита</button></div></div>`;
     $('#helper-back').onclick = () => { creditHelper.step -= 1; renderCreditHelper(); };
     $('#helper-apply').onclick = () => {
-      const input = $(`input[name="product_id"][value="${product.id}"]`); input.checked = true; input.dispatchEvent(new Event('change', {bubbles:true}));
+      const input = $(`input[name="product_id"][value="${product.id}"]`); input.closest('details').open = true; input.checked = true; input.dispatchEvent(new Event('input', {bubbles:true})); input.dispatchEvent(new Event('change', {bubbles:true}));
       root.hidden = true; root.innerHTML = ''; document.querySelector('.product-catalog').scrollIntoView({behavior:'smooth',block:'start'});
       notify(`Выбран вариант «${product.name}». Проверьте сумму и срок.`);
     };
@@ -376,12 +447,13 @@ function renderDetail(d = current?.data || blank()) {
   const profile = current?.client || clientProfile;
   const product = products.find(p => p.id === d.product_id) || products[0];
   const lastNote = [...(current?.events || [])].reverse().find(event => event.status === 'needs_info' && event.actor === 'analyst')?.note;
-  const draftView = user.role === 'client' && (!current || current.status === 'draft');
+  const draftView = user.role === 'client' && (!current || ['draft','needs_info'].includes(current.status));
   if (draftView) {
-    $('#detail').innerHTML = `<div class="detail-header"><h2>${current ? esc(profile?.company_name) : 'Новая заявка'}</h2>${badge(current?.status || 'draft')}</div>${processTracker(current?.status || 'draft')}
+    $('#detail').innerHTML = `<div class="detail-header"><div><h2>${current ? 'Заявка на финансирование' : 'Новая заявка'}</h2><p class="detail-subtitle">Укажите задачу бизнеса — поможем подобрать условия.</p></div>${badge(current?.status || 'draft')}</div>${processTracker(current?.status || 'draft')}
     <form id="application-form" class="application-form">
+    ${current?.status === 'needs_info' ? `<section class="clarification-card"><span class="eyebrow">ТРЕБУЕТСЯ ВАШ ОТВЕТ</span><h3>Банк просит уточнение</h3><p>${esc(lastNote || 'Проверьте данные и добавьте пояснение.')}</p><label>Ответ банку<textarea name="clarification" required minlength="10" maxlength="2000" placeholder="Ответьте на запрос банка и при необходимости исправьте данные ниже">${esc(d.clarification)}</textarea></label></section>` : '<input type="hidden" name="clarification" value="">'}
     <section class="form-section readonly-company"><div class="section-title-row"><h3><span class="section-number">01</span> Сведения о компании</h3><button type="button" id="open-profile">Изменить в профиле</button></div>${companySummary(profile)}</section>
-    <section class="form-section product-catalog"><div class="catalog-heading"><div><h3><span class="section-number">02</span> Выберите цель кредита</h3><p>Выберите подходящий способ финансирования. Ставка, допустимый срок и условия оценки изменятся автоматически.</p></div></div><button type="button" class="accent credit-helper-start" id="credit-helper-start"><span>Не уверены, что выбрать?</span><strong>Помощь с выбором вида кредита →</strong></button><div class="credit-helper" id="credit-helper" hidden></div>${productCatalog(product.id)}</section>
+    <section class="form-section product-catalog"><div class="catalog-heading"><div><h3><span class="section-number">02</span> На что нужны средства?</h3><p>Выберите продукт самостоятельно или ответьте на три вопроса помощника.</p></div></div><button type="button" class="credit-helper-start" id="credit-helper-start"><span><strong>Помочь с выбором кредита</strong><small>Подберём вариант под задачу вашего бизнеса</small></span></button><div class="credit-helper" id="credit-helper" hidden></div>${productCatalog(product.id)}</section>
     <section class="form-section"><h3><span class="section-number">03</span> Параметры финансирования и обеспечение</h3><div class="parameter-fields">
       ${field('amount','Сумма, ₽',d.amount,'number',`required min="${product.min_amount}" max="${product.max_amount}" step="0.01"`)}
       <label>Срок, мес.<input name="term_months" type="number" value="${esc(d.term_months)}" required min="${product.min_term}" max="${product.max_term}" step="1"><span class="field-limit" id="term-limit">От ${esc(product.min_term)} до ${esc(product.max_term)} месяцев для этого вида финансирования</span></label>
@@ -408,23 +480,21 @@ function renderDetail(d = current?.data || blank()) {
     </div></section>
     <section class="form-section document-section"><div class="statement-heading"><div><h3><span class="section-number">06</span> Финансовый документ и кредитная история</h3><p>Отчётность подтверждает выручку и прибыль, а кредитный отчёт показывает все действующие обязательства компании.</p></div><span class="statement-status ${d.financial_document_source === 'uploaded' ? 'ready' : ''}" id="financial-document-status">${d.financial_document_source === 'uploaded' ? 'Финансовый документ загружен' : 'Финансовый документ не предоставлен'}</span></div><div class="document-grid"><label>Вид документа<select name="financial_document_type"><option value="accounting" ${d.financial_document_type === 'accounting' ? 'selected' : ''}>Бухгалтерская отчётность</option><option value="tax_declaration" ${d.financial_document_type === 'tax_declaration' ? 'selected' : ''}>Налоговая декларация</option><option value="usn_declaration" ${d.financial_document_type === 'usn_declaration' ? 'selected' : ''}>Декларация УСН</option><option value="management" ${d.financial_document_type === 'management' ? 'selected' : ''}>Управленческий отчёт</option></select></label><label>Загрузить сводные данные в CSV<input id="financial-document-file" type="file" accept=".csv,text/csv"></label></div><p class="document-format">CSV должен содержать колонки «период_месяцев», «выручка_за_период» и «чистая_прибыль_за_период». В заявке сохраняются рассчитанные среднемесячные значения.</p><input type="hidden" name="financial_document_source" value="${esc(d.financial_document_source || 'not_provided')}"><input type="hidden" name="financial_document_filename" value="${esc(d.financial_document_filename || '')}"><div class="statement-fields"><label>Период документа<select name="financial_document_period_months"><option value="3" ${Number(d.financial_document_period_months) === 3 ? 'selected' : ''}>3 месяца</option><option value="6" ${Number(d.financial_document_period_months) === 6 ? 'selected' : ''}>6 месяцев</option><option value="12" ${Number(d.financial_document_period_months || 12) === 12 ? 'selected' : ''}>12 месяцев</option></select></label>${field('reported_revenue_monthly','Выручка по документу в месяц, ₽',d.reported_revenue_monthly ?? d.revenue_monthly,'number','required min="0" max="100000000000" step="0.01"')}${field('reported_net_profit_monthly','Чистая прибыль по документу в месяц, ₽',d.reported_net_profit_monthly ?? 0,'number','required min="-10000000000" max="10000000000" step="0.01"')}</div><label class="check-label bki-consent"><input type="checkbox" name="bki_consent" ${d.bki_consent ? 'checked' : ''}><span><b>Согласие на получение кредитного отчёта</b><small>Разрешаю запросить кредитный отчёт компании для рассмотрения этой заявки. Цель — оценка кредитоспособности; пользователь отчёта — банк. Согласие оформляется при отправке заявки.</small></span></label></section>
     <section class="form-section preview-section"><div class="preview-heading"><div><span class="eyebrow">ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА</span><h3><span class="section-number">07</span> Проверить параметры</h3><p>Проверим, хватает ли бизнесу денег на новый платёж, совпадают ли данные анкеты с выпиской и отчётностью и нет ли проблем по действующим кредитам. Если заявку нельзя одобрить сразу, подскажем, чего не хватает и что можно изменить.</p></div><button class="accent preview-button" type="button" id="preview">Проверить параметры</button></div><div id="assessment" data-context="preview"></div></section>
-    <input type="hidden" name="clarification" value="">
     <label class="check-label"><input type="checkbox" name="consent" ${d.consent ? 'checked' : ''}><span>Разрешаю обработать указанные данные для рассмотрения заявки.</span></label>
-    <div class="form-actions"><button type="button" id="save">Сохранить черновик</button><button type="submit" class="primary">Отправить в банк →</button></div><p class="small muted compact-note">Предпросмотр не отправляет заявку. Перед отправкой данные сохранятся.</p>
-    </form>`;
+    <div class="form-actions"><button type="button" id="save">${current?.status === 'needs_info' ? 'Сохранить изменения' : 'Сохранить черновик'}</button><button type="submit" class="primary">${current?.status === 'needs_info' ? 'Отправить ответ банку' : 'Отправить в банк'}</button></div><p class="small muted compact-note">Предпросмотр не отправляет заявку. Перед отправкой данные сохранятся.</p>
+    </form>${current?.status === 'needs_info' ? historyBlock() : ''}`;
     renderAssessment(preview || current?.assessment);
     bindDetail();
     return;
   }
 
   const analyst = user.role === 'bank';
-  const clarification = user.role === 'client' && current?.status === 'needs_info' ? `<section class="clarification-card"><span class="eyebrow">ТРЕБУЕТСЯ ВАШ ОТВЕТ</span><h3>Банк просит уточнение</h3><p>${esc(lastNote || 'Проверьте данные и добавьте пояснение.')}</p><label>Ответ банку<textarea id="clarification-answer" maxlength="2000" placeholder="Ответьте на запрос банка — от 10 символов при отправке">${esc(d.clarification)}</textarea></label><div class="form-actions"><button type="button" id="save-clarification">Сохранить ответ</button><button type="button" id="submit-clarification" class="primary">Отправить ответ банку →</button></div></section>` : '';
   const bankActions = analyst && current?.status === 'manual_review' ? '<section class="bank-actions"><span class="eyebrow">ВАШЕ РЕШЕНИЕ</span><h3>Ответ аналитика</h3><p class="small muted">Поля заявки неизменяемы. Выберите решение. Для запроса уточнения и отказа добавьте комментарий; при одобрении он необязателен.</p><div class="template-buttons"><button type="button" data-template="overdue">Пояснить просрочку</button><button type="button" data-template="revenue">Уточнить выручку</button><button type="button" data-template="company">Подтвердить сведения о компании</button></div><label>Комментарий клиенту <span class="muted">(необязательно при одобрении)</span><textarea id="decision-note" maxlength="2000" placeholder="Объясните решение или укажите, что нужно уточнить"></textarea></label><div class="form-actions"><button type="button" data-decision="approve" class="primary">Одобрить</button><button type="button" data-decision="request_info">Запросить уточнение</button><button type="button" data-decision="reject" class="danger">Отказать</button></div></section>' : '';
   const offerAction = user.role === 'client' && current?.status === 'approved' ? '<section class="offer-action"><h3>Предложение готово</h3><button type="button" id="accept" class="primary">Принять условия</button></section>' : '';
   $('#detail').innerHTML = `${analyst ? '<button type="button" class="back-to-list" id="back-to-applications">← Вернуться ко всем заявкам</button>' : ''}<div class="detail-header"><h2>${esc(profile?.company_name || current?.owner)}</h2>${badge(current?.status || 'draft')}</div>${processTracker(current?.status || 'draft')}
     <section class="result-hero ${analyst ? 'analyst-result' : ''}"><span class="eyebrow">${analyst ? 'ПРЕДВАРИТЕЛЬНЫЙ ОТВЕТ СИСТЕМЫ' : 'ОТВЕТ СИСТЕМЫ'}</span><div id="assessment" data-context="${analyst ? 'analyst' : 'client'}"></div></section>
     ${current?.status === 'funded' ? '<div class="funded-note"><b>Предложение принято.</b></div>' : ''}
-    ${clarification}${offerAction}${applicationDetails(d, analyst ? 'Ответы клиента на вопросы заявки' : 'Детали вашей заявки')}${bankActions}${historyBlock()}`;
+    ${offerAction}${applicationDetails(d, analyst ? 'Ответы клиента на вопросы заявки' : 'Детали вашей заявки')}${bankActions}${historyBlock()}`;
   renderAssessment(current?.assessment);
   bindDetail();
 }
@@ -445,7 +515,7 @@ function improvementTipsFor(assessment, actualStatus) {
   if (features.covers_payment === false) {
     tips.push(`После расходов и действующих кредитов остаётся ${money(features.free_cash_flow)}, а новый платёж составляет около ${money(score.monthly_payment)}. Коэффициент покрытия платежа (DSCR) — ${Number(features.dscr || 0).toFixed(2)}. Попробуйте уменьшить сумму или увеличить срок в пределах ${product?.min_term || 'доступного'}–${product?.max_term || 'доступного'} месяцев.`);
   } else if (features.has_approval_buffer === false) {
-    tips.push(`Платёж помещается в денежный поток, но запас составляет ${Number(features.payment_coverage || 0).toFixed(1)} платежа. Для «${product?.name || 'этого продукта'}» ориентир — не менее ${features.required_coverage || 'установленного банком'}. Уменьшите сумму или срок текущих обязательств.`);
+    tips.push(`Платёж помещается в денежный поток, но запас составляет ${Number(features.payment_coverage || 0).toFixed(1)} платежа. Для «${product?.name || 'этого продукта'}» ориентир — не менее ${features.required_coverage || 'установленного банком'}. Попробуйте уменьшить сумму нового кредита или увеличить его срок.`);
   }
   if (features.meets_business_age === false) tips.push(`Для «${product?.name || 'выбранного продукта'}» обычно нужна более длительная история бизнеса. Можно выбрать более короткий оборотный продукт или приложить договоры с постоянными покупателями.`);
   if (features.has_required_collateral === false) tips.push(`Для «${product?.name || 'выбранного продукта'}» нужен залог. Укажите недвижимость, оборудование, транспорт, депозит или приобретаемый объект и его рыночную стоимость.`);
@@ -464,7 +534,7 @@ function improvementTipsFor(assessment, actualStatus) {
   if (checks.overdue_days >= 30) tips.push('Сначала погасите просрочку и дождитесь обновления кредитной истории: смена продукта эту причину не устранит.');
   else if (checks.overdue_days > 0) tips.push('Подготовьте короткое пояснение по текущей просрочке и документ о её погашении или графике урегулирования.');
   if (checks.registry_status !== 'active') tips.push('Проверьте регистрационные сведения компании и подготовьте актуальную выписку из реестра.');
-  if (!tips.length && actualStatus === 'manual_review') tips.push('Заявка требует проверки специалистом из-за условий выбранного продукта. Подготовьте договоры по цели кредита и документы, подтверждающие источник погашения.');
+  if (!tips.length && actualStatus === 'manual_review') tips.push('Заявку проверяет специалист. Если понадобятся дополнительные сведения, запрос появится в этом кабинете.');
   return [...new Set(tips)];
 }
 function renderAssessment(assessment) {
@@ -483,7 +553,7 @@ function renderAssessment(assessment) {
   const rejectionReasons = specificRejectionReasons.length ? specificRejectionReasons : decisionReasons;
   const payment = offer?.monthly_payment ?? score.monthly_payment;
   const label = context === 'analyst' ? 'Предварительный вывод системы' : isPreview ? 'Предварительный результат' : 'Результат рассмотрения';
-  const manualCallout = decision.status === 'manual_review' ? `<p class="manual-review-callout">${isPreview ? 'Заявка будет рассматриваться вручную' : context === 'analyst' ? 'Система рекомендует ручное рассмотрение' : 'Заявка рассматривается вручную'}</p>` : '';
+  const manualCallout = (context === 'analyst' ? decision.status : actualStatus) === 'manual_review' ? `<p class="manual-review-callout">${isPreview ? 'Заявка будет рассматриваться вручную' : context === 'analyst' ? 'Система рекомендует ручное рассмотрение' : 'Заявка рассматривается вручную'}</p>` : '';
   const canApplyAlternative = !!$('#application-form');
   const rejectionBlock = actualStatus === 'rejected' ? `<section class="rejection-reasons"><h4>Причины отказа</h4><ul class="reason-list">${rejectionReasons.map(reason => `<li>${esc(reason)}</li>`).join('')}</ul></section>` : '';
   const detailsReasons = actualStatus === 'rejected' ? [] : reasons;
@@ -494,7 +564,7 @@ function renderAssessment(assessment) {
   const productOptions = ['rejected','manual_review'].includes(actualStatus) && context !== 'analyst' && product_alternatives.length ? `<section class="product-alternatives"><h4>Другие варианты финансирования</h4><p>Это новый предварительный расчёт по тем же финансовым данным, а не обещание одобрения.</p><div>${product_alternatives.map(item => `<article><span>${badge(item.status)}</span><h5>${esc(item.name)}</h5><p>${esc(item.description)}</p><b>${money(item.amount)} · ${esc(item.term_months)} мес.</b><small>${esc(item.annual_rate)}% годовых · около ${money(item.monthly_payment)} в месяц</small>${canApplyAlternative ? `<button type="button" data-product-alternative="${esc(item.product_id)}" data-amount="${esc(item.amount)}" data-term="${esc(item.term_months)}">Выбрать и проверить</button>` : ''}</article>`).join('')}</div></section>` : '';
   const missingDocumentsBlock = !finalClientResult && missing_documents.length ? `<section class="missing-documents"><h4>Что ещё нужно предоставить</h4><ul>${missing_documents.map(document => `<li>${esc(document)}</li>`).join('')}</ul></section>` : '';
   root.innerHTML = `<div class="assessment"><span class="small muted">${label}</span><h3>${esc(statusNames[actualStatus] || 'Оценка готова')}</h3>${rejectionBlock}${manualCallout}${bank_decision?.note && !isPreview && context !== 'analyst' ? `<p class="human-decision"><b>Комментарий сотрудника:</b> ${esc(friendlyText(bank_decision.note))}</p>` : ''}${offer ? `<p class="small">${money(offer.amount)} · ${esc(offer.term_months)} мес. · ${esc(offer.annual_rate)}% годовых</p>` : ''}${payment != null && actualStatus !== 'rejected' && context !== 'analyst' ? `<div class="metric"><span>Ориентировочный платёж в месяц</span><strong>${money(payment)}</strong></div>` : ''}
-    ${missingDocumentsBlock}${improvements}${alternative ? `<div class="alternative"><h4>Вариант с другими параметрами</h4><p><b>${money(alternative.amount)} на ${esc(alternative.term_months)} мес.</b><br>${money(alternative.monthly_payment)} в месяц<br>Сумма платежей ≈ ${money(alternative.monthly_payment * alternative.term_months)}</p><p>Больший срок может увеличить общую выплату. Расчёт указан без комиссий.</p><p>${esc(friendlyText(alternative.explanation || 'Проверьте результат с другими параметрами.'))}</p>${canApplyAlternative ? '<button type="button" id="apply-alternative">Подставить и проверить →</button>' : ''}</div>` : ''}
+    ${missingDocumentsBlock}${improvements}${alternative ? `<div class="alternative"><h4>Вариант с другими параметрами</h4><p><b>${money(alternative.amount)} на ${esc(alternative.term_months)} мес.</b><br>${money(alternative.monthly_payment)} в месяц<br>Сумма платежей ≈ ${money(alternative.monthly_payment * alternative.term_months)}</p><p>Больший срок может увеличить общую выплату. Расчёт указан без комиссий.</p><p>${esc(friendlyText(alternative.explanation || 'Проверьте результат с другими параметрами.'))}</p>${canApplyAlternative ? '<button type="button" id="apply-alternative">Подставить и проверить</button>' : ''}</div>` : ''}
     ${productOptions}${decisionDetails}</div>`;
   if ($('#apply-alternative')) $('#apply-alternative').onclick = () => act(async () => {
     const form = $('#application-form'); form.elements.amount.value = alternative.amount; form.elements.term_months.value = alternative.term_months;
@@ -502,7 +572,7 @@ function renderAssessment(assessment) {
   });
   document.querySelectorAll('[data-product-alternative]').forEach(button => { button.onclick = () => act(async () => {
     const form = $('#application-form'), input = $(`input[name="product_id"][value="${button.dataset.productAlternative}"]`);
-    input.checked = true; input.dispatchEvent(new Event('change', {bubbles:true}));
+    input.closest('details').open = true; input.checked = true; input.dispatchEvent(new Event('change', {bubbles:true}));
     form.elements.amount.value = button.dataset.amount; form.elements.term_months.value = button.dataset.term;
     await makePreview(); notify('Альтернативный продукт подставлен. Заявка ещё не отправлена.');
   }); });
@@ -527,7 +597,12 @@ async function save() {
 }
 async function refreshList() {
   applications = (await api('/api/applications')).applications;
-  if (user?.role === 'bank') clients = (await api('/api/clients')).clients;
+  if (user?.role === 'bank') {
+    clients = (await api('/api/clients')).clients;
+    const count = applications.filter(app => app.status === 'manual_review').length;
+    const overview = $('#review-overview');
+    if (overview) overview.innerHTML = `<span>Ожидают решения: <b>${count}</b></span><small>Открыть очередь ручного рассмотрения</small>`;
+  }
   renderList();
 }
 function bindDetail() {
@@ -556,7 +631,7 @@ function bindDetail() {
       form.elements.amount.value = Math.min(product.max_amount, Math.max(product.min_amount, Number(form.elements.amount.value) || product.min_amount));
       form.elements.term_months.value = Math.min(product.max_term, Math.max(product.min_term, Number(form.elements.term_months.value) || product.min_term));
       $('#term-limit').textContent = `От ${product.min_term} до ${product.max_term} месяцев для этого вида финансирования`;
-      updateCollateralUI();
+      preview = null; stress = null; renderAssessment(null); updateCollateralUI();
     }; });
     $('#preview').onclick = () => act(makePreview);
     $('#save').onclick = () => act(async () => { if (!valid()) return; await save(); renderDetail(); notify('Данные сохранены.'); });
@@ -569,15 +644,6 @@ function bindDetail() {
     }); };
     updateCollateralUI();
   }
-  const updateClarification = submit => act(async () => {
-    const answer = $('#clarification-answer').value.trim();
-    if (submit && answer.length < 10) { notify('Добавьте ответ от 10 символов.', true); $('#clarification-answer').focus(); return; }
-    current = await api('/api/applications/' + encodeURIComponent(current.id), 'PUT', {...current.data, clarification:answer});
-    if (submit) current = await api('/api/applications/' + encodeURIComponent(current.id) + '/submit', 'POST', {});
-    await refreshList(); renderDetail(); notify(submit ? 'Ответ отправлен банку.' : 'Ответ сохранён.');
-  });
-  if ($('#save-clarification')) $('#save-clarification').onclick = () => updateClarification(false);
-  if ($('#submit-clarification')) $('#submit-clarification').onclick = () => updateClarification(true);
   if ($('#back-to-applications')) $('#back-to-applications').onclick = () => { current = null; preview = null; stress = null; renderApplicationsWorkspace(); };
   document.querySelectorAll('[data-template]').forEach(button => { button.onclick = () => {
     $('#decision-note').value = clarificationTemplates[button.dataset.template]; $('#decision-note').focus();

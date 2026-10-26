@@ -350,8 +350,15 @@ class Handler(BaseHTTPRequestHandler):
             require(not origin or (urlsplit(origin).netloc == host and urlsplit(origin).scheme in ("http", "https")),
                     "Разрешены только запросы из этого приложения.", 403)
         if self.command == "GET":
-            files = {"/": ("static/index.html", "text/html; charset=utf-8"),
+            files = {"/": ("static/landing.html", "text/html; charset=utf-8"),
+                     "/login": ("static/index.html", "text/html; charset=utf-8"),
+                     "/cabinet": ("static/index.html", "text/html; charset=utf-8"),
+                     "/landing.css": ("static/landing.css", "text/css; charset=utf-8"),
+                     "/landing.js": ("static/landing.js", "application/javascript; charset=utf-8"),
                      "/app.js": ("static/app.js", "application/javascript; charset=utf-8"),
+                     "/advisor.js": ("static/advisor.js", "application/javascript; charset=utf-8"),
+                     "/advisor.css": ("static/advisor.css", "text/css; charset=utf-8"),
+                     "/push.png": ("static/push.png", "image/png"),
                      "/style.css": ("static/style.css", "text/css; charset=utf-8"),
                      "/openapi.json": ("docs/openapi.json", "application/json; charset=utf-8")}
             if path in files:

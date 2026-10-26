@@ -3,38 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#172d2b">
-  <title>Ясно — кредит с понятным решением</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Кредитный кабинет предпринимателя: подбор финансирования, заявка и понятное решение. Демонстрационный проект.">
+  <title>Кредитный кабинет — Альфа-Бизнес · демо</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/advisor.css">
+  <script src="/advisor.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="Ясно, главная"><span class="brand-symbol" aria-hidden="true">я</span>ясно<span class="brand-dot">.</span></a>
-    <span class="top-caption">Финансирование бизнеса</span>
+    <a class="brand" href="/" aria-label="Альфа-Бизнес, главная"><svg class="brand-symbol" viewBox="0 0 32 40" aria-hidden="true"><path d="M12 2h8l11 28h-8l-2-6H11l-2 6H1L12 2Zm1 16h6l-3-9-3 9ZM2 35h28v5H2z" fill="currentColor"/></svg><span>Альфа-Бизнес</span></a>
+    <span class="top-caption">Кредитный кабинет</span>
+    <span class="demo-label">Демо</span>
     <div class="session" id="session"></div>
   </header>
   <main id="login-screen" class="login-screen">
     <section class="intro">
-      <h1>Понятно, почему.<br>Ясно, что дальше.</h1>
-      <p>Проверьте параметры до подачи заявки. Узнайте причины решения и посмотрите, что изменится при другой сумме или сроке.</p>
-      <div class="intro-steps"><span>01 <b>Заполнить</b></span><span>02 <b>Сравнить</b></span><span>03 <b>Отправить</b></span></div>
-      <div class="hero-note"><p><b>Не просто ответ. Следующий шаг.</b><br>Если условия не подходят, покажем доступный сценарий — когда он есть.</p></div>
+      <h1 id="main-content" tabindex="-1">Кабинет<br>предпринимателя</h1>
+      <p>Ваши заявки, документы и ответы банка. Войдите, чтобы продолжить работу или обсудить с Пушем новую задачу.</p>
+      <div class="login-record"><span>Сохраняется в кабинете</span><p>Условия и черновики заявок<br>Документы компании<br>История рассмотрения</p></div>
+      <a class="back-to-product" href="/">О продукте</a>
     </section>
     <section class="login-card card">
-      <span class="eyebrow">КРЕДИТНЫЙ КАБИНЕТ</span>
-      <h2>Войти в Ясно</h2>
+      <h2>Вход в кабинет</h2>
+      <p class="muted">Продолжите работу с заявкой или создайте новую.</p>
       <form id="login-form">
         <label>Логин<input name="username" value="client" autocomplete="username" required maxlength="64"></label>
         <label>Пароль<input type="password" name="password" value="client-pass" autocomplete="current-password" required></label>
-        <button class="primary full" type="submit">Открыть кабинет <span aria-hidden="true">→</span></button>
+        <button class="primary full" type="submit">Войти в кабинет</button>
       </form>
       <details class="account-help"><summary>Тестовые учётные записи</summary><p class="small muted">Клиенты: <code>client / client-pass</code>, затем <code>client2 / client2-pass</code> … <code>client10 / client10-pass</code>.<br>Сотрудник банка: <code>analyst / analyst-pass</code>.</p></details>
-      <p class="service-warning">Сайт не является банком и не предоставляет реальные банковские услуги.</p>
+      <p class="service-warning">Демонстрационный кабинет. Используйте тестовую учётную запись и вымышленные данные.</p>
     </section>
   </main>
-  <main id="workspace" hidden></main>
+  <main id="workspace" tabindex="-1" hidden></main>
   <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
-  <footer>Учебный MVP · Только синтетические данные · Скоринг, ставки, подпись и выдача демонстрационные</footer>
+  <footer><span>Кредитный кабинет предпринимателя</span><span>Учебный проект · Решения, ставки и выдача демонстрационные</span></footer>
 </body>
 </html>
