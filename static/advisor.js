@@ -15,12 +15,14 @@
     [/товар|закупк|сырье|оборот|материал|поставщик/, 'working_capital']
   ];
   function amountFrom(text, awaitingAmount) {
-    const compact = text.replace(/(\d)[ \u00a0](?=\d{3}(?:\D|$))/g, '$1');
+    // Russian amounts use ordinary, non-breaking or narrow non-breaking spaces.
+    const compact = text.toLocaleLowerCase('ru-RU')
+      .replace(/(\d)[ \u00a0\u202f](?=\d{3}(?:\D|$))/g, '$1');
     const scaled = compact.match(/(-?\d+(?:[.,]\d+)?)\s*(млн|миллион\w*|тыс\.?|тысяч\w*)/);
     if (scaled) return Number(scaled[1].replace(',', '.')) * (scaled[2].startsWith('м') ? 1e6 : 1e3);
     const currency = compact.match(/(-?\d+(?:[.,]\d+)?)\s*(?:₽|руб\w*)/);
     if (currency) return Number(currency[1].replace(',', '.'));
-    if (awaitingAmount && /^\s*\d{3,}\s*$/.test(compact)) return Number(compact);
+    if (awaitingAmount && /^\s*-?\d{3,}(?:[.,]\d+)?\s*$/.test(compact)) return Number(compact.trim().replace(',', '.'));
     return null;
   }
   function termFrom(text) {
@@ -64,7 +66,11 @@
         : 'Ежемесячный платёж зависит от суммы, срока и ставки. Более долгий срок обычно уменьшает платёж, но увеличивает общую выплату. Сначала подберём продукт под вашу задачу, затем посмотрим расчёт.', quickReplies:['Нужно закупить товар', 'Хочу купить оборудование']};
     }
     if (detected) { state.productId = detected[1]; state.purpose = message.trim().slice(0,500); }
-    const amount = amountFrom(text, Boolean(state.productId && state.amount == null));
+    const selectedProduct = products.find(item => item.id === state.productId);
+    const awaitingAmount = selectedProduct && (state.amount == null
+      || !Number.isFinite(state.amount) || state.amount < selectedProduct.min_amount
+      || state.amount > selectedProduct.max_amount);
+    const amount = amountFrom(text, Boolean(awaitingAmount));
     const term = termFrom(text);
     if (amount !== null) state.amount = amount;
     if (term !== null) state.term = term;

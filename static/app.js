@@ -95,7 +95,7 @@ function renderWorkspace() {
   const [title, subtitle] = titles[activeView];
   const tabs = bank ? [['applications','Заявки'],['clients','Клиенты']] : [['advisor','Советчик'],['applications','Заявки'],['profile','Данные компании']];
   const reviewCount = applications.filter(app => app.status === 'manual_review').length;
-  $('#workspace').innerHTML = `<div class="workspace-heading ${activeView === 'advisor' ? 'advisor-workspace-heading' : ''}"><div><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${!bank && activeView === 'applications' ? '<button class="accent" id="new">+ Новая заявка</button>' : ''}</div>${bank ? `<button type="button" class="review-overview" id="review-overview"><span>Ожидают решения: <b>${reviewCount}</b></span><small>Открыть очередь ручного рассмотрения</small></button>` : ''}<nav class="portal-tabs" aria-label="Разделы кабинета">${tabs.map(([view,label]) => `<button class="${activeView === view ? 'active' : ''}" data-view="${view}">${label}</button>`).join('')}</nav><div id="workspace-content"></div>`;
+  $('#workspace').innerHTML = `<div class="workspace-heading ${activeView === 'advisor' ? 'advisor-workspace-heading' : ''}"><div><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ''}</div>${!bank ? '<button type="button" class="accent" id="new">+ Новая заявка</button>' : ''}</div>${bank ? `<button type="button" class="review-overview" id="review-overview"><span>Ожидают решения: <b>${reviewCount}</b></span><small>Открыть очередь ручного рассмотрения</small></button>` : ''}<nav class="portal-tabs" aria-label="Разделы кабинета">${tabs.map(([view,label]) => `<button class="${activeView === view ? 'active' : ''}" data-view="${view}">${label}</button>`).join('')}</nav><div id="workspace-content"></div>`;
   document.querySelectorAll('[data-view]').forEach(button => { button.onclick = () => {
     activeView = button.dataset.view; current = null; preview = null; stress = null; renderWorkspace();
   }; });
@@ -106,6 +106,12 @@ function renderWorkspace() {
   else if (activeView === 'advisor') renderAdvisorView();
   else if (activeView === 'profile') renderProfileView();
   else renderClientsView();
+  if ($('#new')) $('#new').onclick = startNewApplication;
+}
+
+function startNewApplication() {
+  current = null; preview = null; stress = null; activeView = 'applications';
+  renderWorkspace(); scrollPageToTop();
 }
 
 function renderApplicationsWorkspace() {
@@ -113,7 +119,6 @@ function renderApplicationsWorkspace() {
   const filterPanel = bank ? `<section class="bank-filter-panel"><div class="application-filters"><label>Поиск<input id="application-search" value="${esc(bankFilters.query)}" placeholder="Название компании или ИНН"></label><label>Статус<select id="status-filter"><option value="">Все статусы</option>${[['approved','Одобренные'],['manual_review','Требуют рассмотрения'],['needs_info','Нужно уточнение'],['rejected','Отказы'],['draft','Черновики'],['funded','Завершённые']].map(([value,label]) => `<option value="${value}" ${bankFilters.status === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>${bankFilters.client ? `<button type="button" class="filter-chip" id="clear-client-filter">Клиент: ${esc(clients.find(item => item.username === bankFilters.client)?.company_name || bankFilters.client)} ×</button>` : ''}</div></section>` : '';
   const list = `<aside class="sidebar ${bank && !current ? 'expanded-sidebar' : ''}"><div class="sidebar-title"><b>${bank ? 'Найденные заявки' : 'Мои заявки'}</b><span class="count" id="count"></span></div><nav class="application-list ${bank && !current ? 'expanded-list' : ''}" id="application-list" aria-label="Заявки"></nav>${!bank ? '<section class="sidebar-help"><h3>Работа с черновиком</h3><p>Сначала выберите продукт и укажите параметры. Затем добавьте документы и проверьте заявку перед отправкой.</p><p>Черновик можно сохранить и продолжить позже.</p></section>' : ''}</aside>`;
   $('#workspace-content').innerHTML = bank && !current ? `${filterPanel}<div class="expanded-applications">${list}</div>` : `${filterPanel}<div class="workspace-grid">${list}<section class="detail card" id="detail"></section></div>`;
-  if ($('#new')) $('#new').onclick = () => { current = null; preview = null; stress = null; renderList(); renderDetail(); };
   if (bank) {
     $('#application-search').oninput = event => { bankFilters.query = event.target.value; current = null; renderList(); if ($('#detail')) renderDetail(); };
     $('#status-filter').onchange = event => { bankFilters.status = event.target.value; current = null; renderList(); if ($('#detail')) renderDetail(); };
@@ -189,7 +194,7 @@ function renderAdvisorView() {
   const quickReplies = started ? advisor.quickReplies : [
     'Нужно закупить товар', 'Хочу купить оборудование', 'Нужно закрыть кассовый разрыв', 'Какие документы нужны?'
   ];
-  const welcome = '<div class="advisor-welcome"><h2>На что нужны деньги?</h2><p>Расскажите Пушу о задаче, сумме и сроке.<br>Или начните с одного из вопросов.</p></div>';
+  const welcome = '<div class="advisor-welcome"><h2>На что нужны деньги?</h2><p>Расскажите Пушу о задаче, сумме и сроке.<br>Или нажмите «Новая заявка», чтобы сразу заполнить форму.</p></div>';
   const messages = advisor.messages.map(message => `<article class="chat-message ${message.role === 'user' ? 'from-user' : 'from-advisor'}">${message.role === 'assistant' ? '<span class="message-avatar" aria-hidden="true"><img src="/push.png" alt=""></span>' : ''}<div><span class="message-author">${message.role === 'user' ? 'Вы' : 'Пуш'}</span><p>${esc(message.text)}</p></div></article>`).join('');
   $('#workspace-content').innerHTML = `<div class="advisor-layout"><section class="advisor-chat" aria-label="Кредитный советчик Пуш"><header class="advisor-chat-header"><span class="advisor-avatar" aria-hidden="true"><img src="/push.png" alt=""></span><div><h2>Пуш</h2><p>Помощник по финансированию</p></div><button type="button" id="advisor-reset" ${!started || advisor.pending ? 'disabled' : ''}>Начать заново</button></header>
     <div class="advisor-conversation" id="advisor-conversation">${started ? `<div class="chat-messages" role="log" aria-label="Диалог с Пушем" aria-live="polite">${messages}${advisor.pending ? '<p class="advisor-thinking" role="status">Пуш готовит ответ…</p>' : ''}</div>` : welcome}

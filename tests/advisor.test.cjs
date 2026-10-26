@@ -36,6 +36,51 @@ test('Russian years, commas, fractions and half-year parse consistently', () => 
   assert.equal(advisor.amountFrom('1,5 млн рублей', false), 1500000);
   assert.equal(advisor.amountFrom('800 000 рублей', false), 800000);
 });
+test('amounts with Russian grouping spaces are read in full, including quick replies', () => {
+  const goal = advisor.reply('Хочу купить оборудование', blank(), products);
+  for (const space of [' ', '\u00a0', '\u202f']) {
+    for (const suffix of ['', ' ₽', ' рублей']) {
+      const text = `1${space}500${space}000${suffix}`;
+      const result = advisor.reply(text, goal.state, products);
+      assert.equal(result.state.amount, 1500000, text);
+      assert.match(result.answer, /На какой срок/);
+    }
+  }
+  for (const text of goal.quickReplies) {
+    const result = advisor.reply(text, goal.state, products);
+    assert.equal(result.state.amount, Number(text.replace(/\D/g, '')), text);
+    assert.match(result.answer, /На какой срок/);
+  }
+});
+test('a bare amount corrects an out-of-range answer and allows the handoff', () => {
+  for (const invalidAmount of ['900 млн', '-500 тыс', '1 рубль']) {
+    const invalid = advisor.reply(`Нужно ${invalidAmount} на закупку товара на 12 месяцев`, blank(), products);
+    assert.equal(advisor.recommendation(invalid.state, products), null);
+    const corrected = advisor.reply('1000000', invalid.state, products);
+    assert.equal(advisor.recommendation(corrected.state, products).amount, 1000000);
+    assert.equal(corrected.state.term, 12);
+  }
+});
+test('exact product amount limits are accepted after an invalid amount', () => {
+  for (const product of products) {
+    for (const amount of [product.min_amount, product.max_amount]) {
+      const state = {productId:product.id, amount:product.max_amount + 1, term:product.min_term, purpose:'Закупка'};
+      const result = advisor.reply(String(amount), state, products);
+      assert.equal(advisor.recommendation(result.state, products)?.amount, amount, product.id);
+    }
+  }
+});
+test('negative bare amounts stay invalid and term-only answers preserve the amount', () => {
+  const goal = advisor.reply('Нужно закупить товар', blank(), products);
+  const invalid = advisor.reply('-500000', goal.state, products);
+  assert.equal(invalid.state.amount, -500000);
+  assert.equal(advisor.recommendation(invalid.state, products), null);
+  const corrected = advisor.reply('800000,50', invalid.state, products);
+  assert.equal(corrected.state.amount, 800000.5);
+  const term = advisor.reply('18 месяцев', corrected.state, products);
+  assert.equal(advisor.recommendation(term.state, products).amount, 800000.5);
+  assert.equal(term.state.term, 18);
+});
 test('out-of-range and negative amounts never enable the form handoff', () => {
   for (const text of ['Нужно 900 млн на закупку товара на 12 месяцев', 'Нужно -500 тыс на товар на 12 месяцев']) {
     const result = advisor.reply(text, blank(), products);
