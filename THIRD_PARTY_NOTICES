@@ -17,6 +17,9 @@ Frontend:
 - System fonts are used from the user's operating system.
 
 Models, datasets, external services:
+- Optional demo hosting configuration: Render (render.yaml), using the same Docker image.
+  No paid plan, cloud API key or external request is required for local Docker operation.
+  Render terms and free-tier limits: https://render.com/docs/free
 - No trained ML model, LLM, model weights or third-party dataset is included.
 - All demo profiles, tax-id strings, rates and thresholds are fictional.
 - Company registry and credit-bureau checks are deterministic local simulations

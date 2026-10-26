@@ -383,13 +383,15 @@ class Handler(BaseHTTPRequestHandler):
                 db.execute("DELETE FROM sessions WHERE expires<=? OR token_hash=?", (time.time(), self.token_hash()))
                 db.execute("INSERT INTO sessions VALUES(?,?,?)", (hashlib.sha256(token.encode()).hexdigest(), account["username"], time.time()+28800))
             return self.send(200, {"user": {"username": account["username"], "role": account["role"]}},
-                             cookie=f"session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800")
+                             cookie=f"session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800" +
+                             ("; Secure" if getattr(self.server, "secure_cookies", False) else ""))
         user = self.user()
         if path == "/api/logout" and self.command == "POST":
             self.body()
             with self.server.store.connection(write=True) as db:
                 db.execute("DELETE FROM sessions WHERE token_hash=?", (self.token_hash(),))
-            return self.send(200, {"ok": True}, cookie="session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0")
+            return self.send(200, {"ok": True}, cookie="session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0" +
+                             ("; Secure" if getattr(self.server, "secure_cookies", False) else ""))
         if self.command == "GET":
             if path == "/api/me":
                 return self.send(200, {"user": user})
@@ -529,6 +531,10 @@ def create_server(host="127.0.0.1", port=8000, db_path=None):
     server = ThreadingHTTPServer((host, port), Handler)
     server.store = Store(db_path or os.environ.get("DB_PATH", str(ROOT / "runtime/credit.db")))
     server.allowed_hosts = set(os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,::1").split(","))
+    render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+    if render_hostname:
+        server.allowed_hosts.add(render_hostname)
+    server.secure_cookies = os.environ.get("COOKIE_SECURE", "0") == "1"
     return server
 
 

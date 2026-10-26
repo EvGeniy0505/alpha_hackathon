@@ -1,0 +1,18 @@
+# Optional public demo. Main submission: Docker Compose with persistent SQLite.
+services:
+  - type: web
+    name: alpha-credit-cabinet
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "10000"
+      - key: DB_PATH
+        value: /tmp/credit.db
+      - key: COOKIE_SECURE
+        value: "1"

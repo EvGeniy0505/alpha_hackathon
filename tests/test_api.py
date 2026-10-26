@@ -213,6 +213,20 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(app["client"]["average_revenue_6m"], legacy["revenue_monthly"])
         self.assertFalse({"company_name", "tax_id", "business_months"} & set(app["data"]))
 
+    def test_https_deployment_sets_secure_cookie_on_login_and_logout(self):
+        self.server.secure_cookies = True
+        status, _, cookie = self.call("POST", "/api/login", {
+            "username": "client", "password": "client-pass"})
+        self.assertEqual(status, 200)
+        self.assertIn("; Secure", cookie)
+        self.assertIn("HttpOnly", cookie)
+        self.assertIn("SameSite=Strict", cookie)
+        self.cookies["client"] = cookie.split(";")[0]
+        status, _, expired = self.call("POST", "/api/logout", {})
+        self.assertEqual(status, 200)
+        self.assertIn("; Secure", expired)
+        self.assertIn("Max-Age=0", expired)
+
     def test_session_origin_host_and_static_assets(self):
         self.assertEqual(self.call("GET", "/api/me", user="anonymous")[0], 401)
         self.assertEqual(self.call("POST", "/api/preview", {}, headers={"Origin": "https://evil.invalid"})[0], 403)
