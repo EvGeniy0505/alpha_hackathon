@@ -10,7 +10,7 @@ Runtime:
   Includes Debian system components under their respective licenses; image notices
   are normally available under /usr/share/doc/*/copyright in the container.
   Base-image tag pins Python version, not an immutable OS-layer digest.
-- Docker / Docker Compose are optional developer/runtime tools, not vendored here.
+- Docker / Docker Compose provide the primary reproducible delivery path; not vendored here.
 
 Frontend:
 - Plain HTML, CSS and JavaScript. No npm libraries, CDNs or downloaded fonts.

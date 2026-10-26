@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ясно — учебный кредитный кабинет",
-    "version": "0.1.0",
-    "description": "Только синтетические данные. Локальные проверки, демонстрационные ставки и правила. JSON body ≤64 КиБ. Денежные значения в рублях."
+    "version": "0.2.0",
+    "description": "Только синтетические данные. Локальные проверки, демонстрационные ставки и правила. JSON body ≤64 КиБ. Денежные значения в рублях. Данные компании берутся из профиля вошедшего клиента, а не из тела заявки. 11 продуктов; исходные CSV остаются в браузере."
   },
   "servers": [
     {
@@ -75,8 +75,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -92,7 +132,7 @@
     "/api/login": {
       "post": {
         "summary": "Вход в учебный аккаунт",
-        "description": "Создаёт HttpOnly SameSite=Strict cookie session на 8 часов. Пароль по умолчанию demo-pass-2026.",
+        "description": "Создаёт HttpOnly SameSite=Strict cookie session на 8 часов. client / client-pass; client2 / client2-pass … client10 / client10-pass; analyst / analyst-pass.",
         "responses": {
           "200": {
             "description": "Успех",
@@ -150,8 +190,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -247,8 +327,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -338,8 +458,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -371,38 +531,13 @@
                     "products": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string"
-                          },
-                          "min_amount": {
-                            "type": "number"
-                          },
-                          "max_amount": {
-                            "type": "number"
-                          },
-                          "min_term": {
-                            "type": "number"
-                          },
-                          "max_term": {
-                            "type": "number"
-                          },
-                          "annual_rate": {
-                            "type": "number"
-                          }
-                        },
-                        "required": []
+                        "$ref": "#/components/schemas/Product"
                       }
                     }
                   },
-                  "required": []
+                  "required": [
+                    "products"
+                  ]
                 }
               }
             }
@@ -447,8 +582,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -544,8 +719,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -617,8 +832,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -709,8 +964,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -780,8 +1075,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -863,8 +1198,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -945,8 +1320,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -1039,8 +1454,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -1135,8 +1590,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -1179,13 +1674,12 @@
                   },
                   "note": {
                     "type": "string",
-                    "minLength": 10,
-                    "maxLength": 2000
+                    "maxLength": 2000,
+                    "description": "Для reject и request_info — от 10 до 2000 символов после trim. Для approve можно не передавать или оставить пустым; непустой комментарий — от 10 символов."
                   }
                 },
                 "required": [
-                  "action",
-                  "note"
+                  "action"
                 ]
               }
             }
@@ -1248,8 +1742,48 @@
               }
             }
           },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Недопустимое состояние",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
             "content": {
               "application/json": {
                 "schema": {
@@ -1288,6 +1822,403 @@
           }
         }
       }
+    },
+    "/api/client-profile": {
+      "get": {
+        "summary": "Профиль компании текущего клиента",
+        "description": "Только роль client.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "client": {
+                      "$ref": "#/components/schemas/ClientProfile"
+                    }
+                  },
+                  "required": [
+                    "client"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "description": "Нет сессии"
+          },
+          "403": {
+            "description": "Нет доступа"
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт данных"
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Обновить профиль компании",
+        "description": "Только client. ИНН должен быть уникален; данные профиля используются при расчёте и отображении заявок.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "client": {
+                      "$ref": "#/components/schemas/ClientProfile"
+                    }
+                  },
+                  "required": [
+                    "client"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "description": "Нет сессии"
+          },
+          "403": {
+            "description": "Нет доступа"
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт данных"
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientProfileInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients": {
+      "get": {
+        "summary": "Реестр компаний для сотрудника банка",
+        "description": "Только роль bank. Включает счётчики заявок и ручного рассмотрения.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "clients": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ClientDirectoryEntry"
+                      }
+                    }
+                  },
+                  "required": [
+                    "clients"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "description": "Нет сессии"
+          },
+          "403": {
+            "description": "Нет доступа"
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт данных"
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/clients/{username}/applications": {
+      "get": {
+        "summary": "Заявки выбранного клиента для сотрудника банка",
+        "description": "Только роль bank; неизвестный клиент — 404.",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "applications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Application"
+                      }
+                    }
+                  },
+                  "required": [
+                    "applications"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос"
+          },
+          "401": {
+            "description": "Нет сессии"
+          },
+          "403": {
+            "description": "Нет доступа"
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Метод не поддерживается",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Конфликт данных"
+          },
+          "413": {
+            "description": "JSON больше 64 КиБ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Требуется application/json",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -1302,34 +2233,33 @@
       "ApplicationInput": {
         "type": "object",
         "properties": {
-          "company_name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 120
-          },
-          "tax_id": {
-            "type": "string",
-            "pattern": "^(?:[0-9]{10}|[0-9]{12})$",
-            "description": "Синтетический ИНН; контрольная сумма не проверяется."
-          },
           "product_id": {
             "type": "string",
             "enum": [
+              "overdraft",
               "working_capital",
-              "equipment"
+              "credit_line_revolving",
+              "credit_line_nonrevolving",
+              "equipment",
+              "commercial_mortgage",
+              "project_finance",
+              "subsidized",
+              "leasing",
+              "factoring",
+              "bank_guarantee"
             ]
           },
           "amount": {
             "type": "number",
             "minimum": 100000,
-            "maximum": 10000000,
-            "description": "Рубли. Дополнительно проверяется диапазон выбранного продукта."
+            "maximum": 500000000,
+            "description": "Рубли; сервер проверяет лимиты выбранного продукта из GET /api/products."
           },
           "term_months": {
             "type": "integer",
-            "minimum": 6,
-            "maximum": 60,
-            "description": "Дополнительно проверяется диапазон продукта."
+            "minimum": 1,
+            "maximum": 180,
+            "description": "Месяцы; сервер проверяет диапазон выбранного продукта."
           },
           "purpose": {
             "type": "string",
@@ -1351,33 +2281,169 @@
             "minimum": 0,
             "maximum": 10000000000
           },
-          "business_months": {
+          "collateral_type": {
+            "type": "string",
+            "enum": [
+              "none",
+              "real_estate",
+              "equipment",
+              "vehicle",
+              "deposit",
+              "purchased_asset",
+              "msp_guarantee"
+            ],
+            "default": "none"
+          },
+          "collateral_value": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000000,
+            "default": 0
+          },
+          "finance_period_months": {
+            "type": "integer",
+            "enum": [
+              6,
+              12
+            ],
+            "default": 6
+          },
+          "statement_source": {
+            "type": "string",
+            "enum": [
+              "not_provided",
+              "uploaded",
+              "bank_account"
+            ],
+            "default": "bank_account",
+            "description": "uploaded — показатели рассчитаны браузером из CSV; bank_account — синтетические данные банка. Исходный CSV не хранится на сервере."
+          },
+          "statement_filename": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 255,
+            "default": ""
+          },
+          "statement_period_months": {
+            "type": "integer",
+            "enum": [
+              6,
+              12
+            ],
+            "default": 6
+          },
+          "statement_monthly_inflow": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000000,
+            "description": "По умолчанию revenue_monthly."
+          },
+          "statement_min_monthly_inflow": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000000,
+            "description": "По умолчанию revenue_monthly."
+          },
+          "statement_average_balance": {
+            "type": "number",
+            "minimum": -10000000000,
+            "maximum": 10000000000,
+            "default": 0
+          },
+          "statement_negative_days": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1200
+            "maximum": 366,
+            "default": 0
+          },
+          "statement_tax_payments": {
+            "type": "boolean",
+            "default": true
+          },
+          "statement_seasonality": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 0
+          },
+          "statement_top_counterparty_share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0
+          },
+          "financial_document_source": {
+            "type": "string",
+            "enum": [
+              "not_provided",
+              "uploaded",
+              "bank_report"
+            ],
+            "default": "bank_report"
+          },
+          "financial_document_type": {
+            "type": "string",
+            "enum": [
+              "accounting",
+              "tax_declaration",
+              "usn_declaration",
+              "management"
+            ],
+            "default": "accounting"
+          },
+          "financial_document_filename": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 255,
+            "default": ""
+          },
+          "financial_document_period_months": {
+            "type": "integer",
+            "enum": [
+              3,
+              6,
+              12
+            ],
+            "default": 12
+          },
+          "reported_revenue_monthly": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000000,
+            "description": "По умолчанию revenue_monthly."
+          },
+          "reported_net_profit_monthly": {
+            "type": "number",
+            "minimum": -10000000000,
+            "maximum": 10000000000,
+            "description": "По умолчанию revenue_monthly - expenses_monthly."
+          },
+          "bki_consent": {
+            "type": "boolean",
+            "default": true,
+            "description": "Должно быть true при отправке. Совместимое значение API по умолчанию — true; веб-форма всегда передаёт явный выбор пользователя."
           },
           "consent": {
             "type": "boolean",
             "default": false,
-            "description": "Обязательно true перед отправкой."
+            "description": "Должно быть true при отправке."
           },
           "clarification": {
             "type": "string",
+            "minLength": 0,
             "maxLength": 2000,
-            "default": ""
+            "default": "",
+            "description": "При повторной отправке после needs_info — минимум 10 символов."
           }
         },
         "required": [
-          "company_name",
-          "tax_id",
           "product_id",
           "amount",
           "term_months",
           "purpose",
           "revenue_monthly",
           "expenses_monthly",
-          "existing_payment",
-          "business_months"
+          "existing_payment"
         ],
         "additionalProperties": false
       },
@@ -1386,11 +2452,7 @@
         "properties": {
           "username": {
             "type": "string",
-            "enum": [
-              "client",
-              "client2",
-              "analyst"
-            ]
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$"
           },
           "role": {
             "type": "string",
@@ -1486,6 +2548,29 @@
           },
           "source": {
             "const": "local_synthetic"
+          },
+          "credit_report": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "active_loans": {
+                "type": "integer"
+              },
+              "total_debt": {
+                "type": "number"
+              },
+              "monthly_payment_total": {
+                "type": "number"
+              },
+              "max_overdue_days": {
+                "type": "integer"
+              },
+              "source": {
+                "const": "local_synthetic_bki"
+              }
+            }
           }
         },
         "required": []
@@ -1622,6 +2707,19 @@
               }
             },
             "required": []
+          },
+          "missing_documents": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "product_alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Продукт, перепроверенные сумма и срок, платёж и причины альтернативы."
+            }
           }
         },
         "required": []
@@ -1702,6 +2800,9 @@
           },
           "updated_at": {
             "type": "string"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClientProfile"
           }
         },
         "required": []
@@ -1715,6 +2816,255 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "ClientProfileInput": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "tax_id": {
+            "type": "string",
+            "pattern": "^(?:[0-9]{10}|[0-9]{12})$",
+            "description": "Синтетический ИНН; контрольная сумма не проверяется."
+          },
+          "organization_type": {
+            "type": "string",
+            "enum": [
+              "ИП",
+              "ООО",
+              "АО",
+              "ПАО",
+              "Самозанятый"
+            ]
+          },
+          "business_months": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1200
+          },
+          "industry": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "contact_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 40
+          },
+          "email": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 120,
+            "format": "email"
+          },
+          "legal_address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "average_revenue_6m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000000000
+          }
+        },
+        "required": [
+          "company_name",
+          "tax_id",
+          "organization_type",
+          "business_months",
+          "industry",
+          "contact_name",
+          "phone",
+          "email",
+          "legal_address",
+          "average_revenue_6m"
+        ],
+        "additionalProperties": false
+      },
+      "ClientProfile": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "tax_id": {
+            "type": "string",
+            "pattern": "^(?:[0-9]{10}|[0-9]{12})$",
+            "description": "Синтетический ИНН; контрольная сумма не проверяется."
+          },
+          "organization_type": {
+            "type": "string",
+            "enum": [
+              "ИП",
+              "ООО",
+              "АО",
+              "ПАО",
+              "Самозанятый"
+            ]
+          },
+          "business_months": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1200
+          },
+          "industry": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "contact_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 40
+          },
+          "email": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 120,
+            "format": "email"
+          },
+          "legal_address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 300
+          },
+          "average_revenue_6m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000000000
+          },
+          "username": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "company_name",
+          "tax_id",
+          "organization_type",
+          "business_months",
+          "industry",
+          "contact_name",
+          "phone",
+          "email",
+          "legal_address",
+          "average_revenue_6m",
+          "username",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "ClientDirectoryEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientProfile"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "application_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "manual_review_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "latest_application_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              }
+            },
+            "required": []
+          }
+        ]
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "min_amount": {
+            "type": "number"
+          },
+          "max_amount": {
+            "type": "number"
+          },
+          "min_term": {
+            "type": "integer"
+          },
+          "max_term": {
+            "type": "integer"
+          },
+          "annual_rate": {
+            "type": "number"
+          },
+          "approval_coverage": {
+            "type": "number"
+          },
+          "min_business_months": {
+            "type": "integer"
+          },
+          "required_collateral_coverage": {
+            "type": "number"
+          },
+          "manual_review": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "category",
+          "min_amount",
+          "max_amount",
+          "min_term",
+          "max_term",
+          "annual_rate",
+          "approval_coverage",
+          "min_business_months"
         ]
       }
     }

@@ -1,62 +1,125 @@
 @base = http://localhost:8000
-# HTTP-клиент должен сохранять cookie session из ответа login.
-# VS Code REST Client: включите cookie jar. Для curl используйте -c cookies.txt -b cookies.txt.
+# VS Code REST Client: cookie jar должен быть включён.
+# Для curl: -c cookies.txt -b cookies.txt.
+# Данные синтетические. После перезапуска сессия и заявки сохраняются.
+# API получает показатели документов, а не исходные CSV.
+# bank_account / bank_report — синтетические источники для автономного API-показа.
 
-### Health
+### Health (без авторизации)
 GET {{base}}/health
 
 ### Login client
 POST {{base}}/api/login
 Content-Type: application/json
 
-{"username":"client","password":"demo-pass-2026"}
+{"username":"client","password":"client-pass"}
 
-### Products
+### Current user
+GET {{base}}/api/me
+
+### Profile (реквизиты отдельно от анкеты заявки)
+GET {{base}}/api/client-profile
+
+### Products and their actual amount/term limits
 GET {{base}}/api/products
 
-### Preview: financial rejection with a possible alternative
+### Preview (ничего не сохраняет)
 POST {{base}}/api/preview
 Content-Type: application/json
 
-{"company_name":"ООО Учебный Пекарь","tax_id":"7700000001","product_id":"working_capital","amount":600000,"term_months":12,"purpose":"Закупка сырья для пекарни","revenue_monthly":60000,"expenses_monthly":10000,"existing_payment":0,"business_months":36,"consent":true}
+{"product_id":"working_capital","amount":800000,"term_months":18,"purpose":"Закупка сырья для пекарни","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":100000,"collateral_type":"none","statement_source":"bank_account","financial_document_source":"bank_report","bki_consent":true,"consent":true}
 
-### Create an automatically approved application
-# @name created
+### Create draft; ожидается 201 и status=draft
+# @name approved
 POST {{base}}/api/applications
 Content-Type: application/json
 
-{"company_name":"ООО Учебный Пекарь","tax_id":"7700000001","product_id":"working_capital","amount":600000,"term_months":12,"purpose":"Закупка сырья для пекарни","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":100000,"business_months":36,"consent":true}
+{"product_id":"working_capital","amount":800000,"term_months":18,"purpose":"Закупка сырья для пекарни","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":100000,"collateral_type":"none","statement_source":"bank_account","financial_document_source":"bank_report","bki_consent":true,"consent":true}
 
-### Submit (VS Code REST Client uses the preceding named response)
-POST {{base}}/api/applications/{{created.response.body.$.id}}/submit
+### Submit; ожидается approved
+POST {{base}}/api/applications/{{approved.response.body.$.id}}/submit
 Content-Type: application/json
 
 {}
 
-### Accept simulated offer
-POST {{base}}/api/applications/{{created.response.body.$.id}}/accept
+### Accept simulated offer; ожидается funded, в events есть signed и funded
+POST {{base}}/api/applications/{{approved.response.body.$.id}}/accept
 Content-Type: application/json
 
 {}
 
-### List
-GET {{base}}/api/applications
+### Повторное принятие того же предложения — 409
+POST {{base}}/api/applications/{{approved.response.body.$.id}}/accept
+Content-Type: application/json
 
-### Login bank (replaces the current cookie)
+{}
+
+### Create a case for manual review (в БКИ найдено 50 000 ₽/мес., в анкете 0)
+# @name review
+POST {{base}}/api/applications
+Content-Type: application/json
+
+{"product_id":"working_capital","amount":800000,"term_months":18,"purpose":"Пополнение запасов магазина","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":0,"statement_source":"bank_account","financial_document_source":"bank_report","bki_consent":true,"consent":true}
+
+### Submit; ожидается manual_review
+POST {{base}}/api/applications/{{review.response.body.$.id}}/submit
+Content-Type: application/json
+
+{}
+
+### Login bank (заменяет cookie клиента)
 POST {{base}}/api/login
 Content-Type: application/json
 
-{"username":"analyst","password":"demo-pass-2026"}
+{"username":"analyst","password":"analyst-pass"}
 
-### Bank queue
-GET {{base}}/api/applications
+### Bank registry
+GET {{base}}/api/clients
 
-### Request clarification: replace id with a manual_review application
-@reviewId = REPLACE_WITH_MANUAL_REVIEW_ID
-POST {{base}}/api/applications/{{reviewId}}/decision
+### Applications of one client
+GET {{base}}/api/clients/client/applications
+
+### Request clarification; ожидается needs_info
+POST {{base}}/api/applications/{{review.response.body.$.id}}/decision
 Content-Type: application/json
 
-{"action":"request_info","note":"Поясните причину учебной просрочки и её текущий статус."}
+{"action":"request_info","note":"Уточните платежи по действующим кредитам компании."}
+
+### Login client again
+POST {{base}}/api/login
+Content-Type: application/json
+
+{"username":"client","password":"client-pass"}
+
+### Update the same application
+PUT {{base}}/api/applications/{{review.response.body.$.id}}
+Content-Type: application/json
+
+{"product_id":"working_capital","amount":800000,"term_months":18,"purpose":"Пополнение запасов магазина","revenue_monthly":1500000,"expenses_monthly":1000000,"existing_payment":50000,"statement_source":"bank_account","financial_document_source":"bank_report","bki_consent":true,"consent":true,"clarification":"Подтверждаем действующие платежи: 50 000 рублей в месяц."}
+
+### Resubmit; ожидается manual_review
+POST {{base}}/api/applications/{{review.response.body.$.id}}/submit
+Content-Type: application/json
+
+{}
+
+### Login bank again
+POST {{base}}/api/login
+Content-Type: application/json
+
+{"username":"analyst","password":"analyst-pass"}
+
+### Approve; комментарий при одобрении необязателен
+POST {{base}}/api/applications/{{review.response.body.$.id}}/decision
+Content-Type: application/json
+
+{"action":"approve"}
+
+### View final application and history
+GET {{base}}/api/applications/{{review.response.body.$.id}}
+
+### All applications accessible to the current role
+GET {{base}}/api/applications
 
 ### Logout
 POST {{base}}/api/logout
