@@ -25,7 +25,7 @@
     if (awaitingAmount && /^\s*-?\d{3,}(?:[.,]\d+)?\s*$/.test(compact)) return Number(compact.trim().replace(',', '.'));
     return null;
   }
-  function termFrom(text) {
+  function termFrom(text, awaitingTerm = false) {
     const months = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:мес\w*|месяц\w*)/);
     if (months) return Number(months[1].replace(',', '.'));
     const years = text.match(/(-?\d+(?:[.,]\d+)?)\s*(?:год(?:а|ов)?|лет)(?![а-я])/);
@@ -34,6 +34,8 @@
     if (/на (?:один )?год(?![а-я])/.test(text)) return 12;
     if (/на два года/.test(text)) return 24;
     if (/на три года/.test(text)) return 36;
+    const bare = awaitingTerm && text.match(/^\s*(?:на\s+)?(-?\d+(?:[.,]\d+)?)\s*$/);
+    if (bare) return Number(bare[1].replace(',', '.'));
     return null;
   }
   function payment(amount, rate, months) {
@@ -71,7 +73,10 @@
       || !Number.isFinite(state.amount) || state.amount < selectedProduct.min_amount
       || state.amount > selectedProduct.max_amount);
     const amount = amountFrom(text, Boolean(awaitingAmount));
-    const term = termFrom(text);
+    const awaitingTerm = selectedProduct && !awaitingAmount && (state.term == null
+      || !Number.isInteger(state.term) || state.term < selectedProduct.min_term
+      || state.term > selectedProduct.max_term);
+    const term = termFrom(text, Boolean(awaitingTerm));
     if (amount !== null) state.amount = amount;
     if (term !== null) state.term = term;
     const product = products.find(item => item.id === state.productId);

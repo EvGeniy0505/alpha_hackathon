@@ -1,4 +1,4 @@
-Ясно / Credit MVP — third-party components and simulated integrations
+Кредитный кабинет предпринимателя — third-party components and simulated integrations
 
 Runtime:
 - CPython 3.12.10 and its standard library. Python Software Foundation License.
@@ -36,10 +36,7 @@ Design references:
   Portfolio: https://itsalive.studio/works/push
   Image: https://static.tildacdn.one/tild3934-3438-4531-a161-373830336166/image_2090012256.png
   Local file: static/push.png. This file is not under a permissive code license.
-- Cozmo (https://cozmo.mx/) was inspected as an interaction reference.
-  No Cozmo code, images or other assets are included.
 
 The advisor conversation is a scripted prototype in static/advisor.js, not an LLM.
-The user-provided case image informed the prototype and is not redistributed here.
 
 No source-code license for the team's own work is imposed by this notices file.

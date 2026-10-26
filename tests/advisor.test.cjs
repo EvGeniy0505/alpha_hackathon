@@ -94,6 +94,44 @@ test('fractional and out-of-range terms cannot be transferred', () => {
   }
   assert.equal(advisor.termFrom('на -12 месяцев'), -12);
 });
+test('bare numbers answer the term question without changing the selected amount', () => {
+  const state = {productId:'overdraft',amount:499999,term:null,purpose:'Кассовый разрыв'};
+  for (const [message, expected] of [['3',3],['5',5],['на 6',6],[' 12 ',12]]) {
+    const result = advisor.reply(message, state, products);
+    const offer = advisor.recommendation(result.state, products);
+    assert.equal(offer.term, expected, message);
+    assert.equal(offer.amount, 499999, message);
+  }
+  assert.equal(state.term, null);
+});
+test('invalid bare terms ask again and can be corrected with another bare number', () => {
+  const state = {productId:'overdraft',amount:499999,term:null,purpose:'Кассовый разрыв'};
+  for (const message of ['0','13','-3','1,5']) {
+    const invalid = advisor.reply(message, state, products);
+    assert.equal(advisor.recommendation(invalid.state, products), null, message);
+    assert.match(invalid.answer, /от 1 до 12 месяцев/);
+    assert.equal(invalid.state.amount, 499999);
+    const corrected = advisor.reply('5', invalid.state, products);
+    assert.equal(advisor.recommendation(corrected.state, products).term, 5);
+  }
+});
+test('an amount-only answer does not also become the term', () => {
+  const goal = advisor.reply('Нужно закрыть кассовый разрыв', blank(), products);
+  const amount = advisor.reply('499999', goal.state, products);
+  assert.equal(amount.state.amount, 499999);
+  assert.equal(amount.state.term, null);
+  assert.match(amount.answer, /На какой срок/);
+  assert.equal(advisor.termFrom('3'), null, 'a bare number requires a term question');
+});
+test('bare term answers accept the exact limits of each product', () => {
+  for (const product of products) {
+    const state = {productId:product.id,amount:product.min_amount,term:null,purpose:'Финансирование бизнеса'};
+    for (const term of [product.min_term,product.max_term]) {
+      const result = advisor.reply(String(term), state, products);
+      assert.equal(advisor.recommendation(result.state, products)?.term, term, product.id);
+    }
+  }
+});
 test('document questions preserve the chosen conditions', () => {
   const state = {productId:'working_capital',amount:800000,term:18,purpose:'Закупка товара'};
   const result = advisor.reply('Какие документы нужны?', state, products);
