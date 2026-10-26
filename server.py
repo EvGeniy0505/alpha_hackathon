@@ -355,6 +355,8 @@ class Handler(BaseHTTPRequestHandler):
                      "/cabinet": ("static/index.html", "text/html; charset=utf-8"),
                      "/landing.css": ("static/landing.css", "text/css; charset=utf-8"),
                      "/landing.js": ("static/landing.js", "application/javascript; charset=utf-8"),
+                     "/refinements.css": ("static/refinements.css", "text/css; charset=utf-8"),
+                     "/application-flow.js": ("static/application-flow.js", "application/javascript; charset=utf-8"),
                      "/app.js": ("static/app.js", "application/javascript; charset=utf-8"),
                      "/advisor.js": ("static/advisor.js", "application/javascript; charset=utf-8"),
                      "/advisor.css": ("static/advisor.css", "text/css; charset=utf-8"),

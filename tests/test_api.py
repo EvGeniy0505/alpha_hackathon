@@ -217,7 +217,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(self.call("GET", "/api/me", user="anonymous")[0], 401)
         self.assertEqual(self.call("POST", "/api/preview", {}, headers={"Origin": "https://evil.invalid"})[0], 403)
         self.assertEqual(self.call("GET", "/health", headers={"Host": "evil.invalid"})[0], 403)
-        for path in ["/", "/login", "/cabinet", "/landing.css", "/landing.js", "/app.js", "/advisor.js", "/advisor.css", "/push.png", "/style.css", "/health", "/openapi.json"]:
+        for path in ["/", "/login", "/cabinet", "/landing.css", "/landing.js", "/refinements.css", "/application-flow.js", "/app.js", "/advisor.js", "/advisor.css", "/push.png", "/style.css", "/health", "/openapi.json"]:
             self.assertEqual(self.call("GET", path)[0], 200, path)
         landing = self.call("GET", "/", user="anonymous")[1].decode("utf-8")
         self.assertIn('href="/login"', landing)

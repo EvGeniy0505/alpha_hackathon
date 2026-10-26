@@ -150,12 +150,22 @@ function renderList() {
 
 function renderProfileView() {
   const p = clientProfile;
-  $('#workspace-content').innerHTML = `<section class="profile-card card"><div class="profile-intro"><div><h2>${esc(p.company_name)}</h2><p>Изменения будут использоваться в новых заявках.</p></div><span class="profile-login">Логин: ${esc(p.username)}</span></div><form id="profile-form"><div class="profile-fields"><label>Название компании<input name="company_name" value="${esc(p.company_name)}" required maxlength="120"></label><label>ИНН<input name="tax_id" value="${esc(p.tax_id)}" required pattern="[0-9]{10}([0-9]{2})?"></label><label>Вид организации<select name="organization_type">${['ИП','ООО','АО','ПАО','Самозанятый'].map(value => `<option ${p.organization_type === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label><label>Возраст бизнеса, мес.<input name="business_months" type="number" min="0" max="1200" step="1" value="${esc(p.business_months)}" required></label><label>Сфера деятельности<input name="industry" value="${esc(p.industry)}" required maxlength="120"></label><label>Средняя выручка за последние 6 месяцев, ₽<input name="average_revenue_6m" type="number" min="0" max="10000000000" step="0.01" value="${esc(p.average_revenue_6m)}" required></label><label>Контактное лицо<input name="contact_name" value="${esc(p.contact_name)}" required maxlength="120"></label><label>Телефон<input name="phone" value="${esc(p.phone)}" required maxlength="40"></label><label>Email<input name="email" type="email" value="${esc(p.email)}" required maxlength="120"></label><label class="wide">Юридический адрес<input name="legal_address" value="${esc(p.legal_address)}" required maxlength="300"></label></div><div class="form-actions"><button class="primary" type="submit">Сохранить данные</button></div></form></section>`;
+  const initials = p.company_name.replace(/^(ООО|ИП|ПАО|АО)\s+/, '').split(/\s+/).slice(0,2).map(word => word[0] || '').join('').toLocaleUpperCase('ru-RU');
+  const input = (name,label,type = 'text',extra = '') => `<label>${label}<input name="${name}" type="${type}" value="${esc(p[name])}" required ${extra}></label>`;
+  $('#workspace-content').innerHTML = `<section class="company-profile-layout">
+    <aside class="profile-passport"><div class="company-monogram" aria-hidden="true">${esc(initials)}</div><span class="passport-label">Ваше дело</span><h2>${esc(p.company_name)}</h2><p>${esc(p.industry)}</p><dl><div><dt>ИНН</dt><dd>${esc(p.tax_id)}</dd></div><div><dt>Форма бизнеса</dt><dd>${esc(p.organization_type)}</dd></div><div><dt>История компании</dt><dd>${esc(p.business_months)} мес.</dd></div></dl><span class="passport-account">Учётная запись: ${esc(p.username)}</span><div class="passport-note">Эти сведения подставляются в новые заявки. Уже отправленные заявки сохраняют свою историю.</div></aside>
+    <form id="profile-form" class="company-profile-form">
+      <fieldset class="profile-group"><legend><span>01</span> Реквизиты компании</legend><p>Так, как они указаны в документах.</p><div class="profile-fields">${input('company_name','Название компании','text','maxlength="120"')}<label>Вид организации<select name="organization_type">${['ИП','ООО','АО','ПАО','Самозанятый'].map(value => `<option ${p.organization_type === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>${input('tax_id','ИНН','text','pattern="[0-9]{10}([0-9]{2})?" inputmode="numeric"')}${input('industry','Чем занимается компания','text','maxlength="120"')}<label class="wide">Юридический адрес<input name="legal_address" value="${esc(p.legal_address)}" required maxlength="300"></label></div></fieldset>
+      <fieldset class="profile-group"><legend><span>02</span> О вашем бизнесе</legend><p>Поможет подобрать условия при следующем обращении.</p><div class="profile-fields">${input('business_months','Сколько месяцев работает бизнес','number','min="0" max="1200" step="1"')}${input('average_revenue_6m','Средняя выручка за 6 месяцев, ₽','number','min="0" max="10000000000" step="0.01"')}</div></fieldset>
+      <fieldset class="profile-group"><legend><span>03</span> Как с вами связаться</legend><p>Контакт человека, который ведёт заявку.</p><div class="profile-fields">${input('contact_name','Контактное лицо','text','maxlength="120"')}${input('phone','Телефон','tel','maxlength="40"')}${input('email','Email','email','maxlength="120"')}</div></fieldset>
+      <div class="profile-actions"><span id="profile-save-state" role="status">Данные из вашего профиля</span><button class="primary" type="submit">Сохранить изменения</button></div>
+    </form></section>`;
+  $('#profile-form').addEventListener('input', () => { $('#profile-save-state').textContent = 'Есть несохранённые изменения'; $('#profile-save-state').classList.add('has-changes'); });
   $('#profile-form').onsubmit = event => { event.preventDefault(); act(async () => {
     const data = Object.fromEntries(new FormData(event.target));
     data.business_months = Number(data.business_months); data.average_revenue_6m = Number(data.average_revenue_6m);
     clientProfile = (await api('/api/client-profile','PUT',data)).client;
-    renderProfileView(); notify('Данные компании обновлены.');
+    renderProfileView(); renderSession(); $('#profile-save-state').textContent = 'Изменения сохранены'; notify('Данные компании обновлены.');
   }); };
 }
 
@@ -506,7 +516,7 @@ function readForm() {
   data.bki_consent = form.elements.bki_consent.checked;
   return data;
 }
-function valid() { return $('#application-form').reportValidity(); }
+function valid() { return ApplicationFlow.validate($('#application-form')); }
 function improvementTipsFor(assessment, actualStatus) {
   if (!['rejected','manual_review'].includes(actualStatus)) return [];
   const score = assessment.score || {}, features = score.features || {}, checks = assessment.checks || {};
@@ -608,6 +618,15 @@ async function refreshList() {
 function bindDetail() {
   const form = $('#application-form');
   if (form) {
+    ApplicationFlow.mount(form, {
+      company: current?.client || clientProfile,
+      catalog: products,
+      initialStep: current?.status === 'needs_info' ? 3 : 0,
+      summary: () => ({
+        product: products.find(product => product.id === form.elements.product_id.value)?.name || 'Выберите продукт',
+        amount: money(form.elements.amount.value), term: form.elements.term_months.value + ' мес.'
+      })
+    });
     if ($('#open-profile')) $('#open-profile').onclick = () => { activeView = 'profile'; current = null; preview = null; stress = null; renderWorkspace(); };
     $('#credit-helper-start').onclick = () => {
       creditHelper = {step:0, answers:{}};
@@ -634,11 +653,11 @@ function bindDetail() {
       preview = null; stress = null; renderAssessment(null); updateCollateralUI();
     }; });
     $('#preview').onclick = () => act(makePreview);
-    $('#save').onclick = () => act(async () => { if (!valid()) return; await save(); renderDetail(); notify('Данные сохранены.'); });
+    $('#save').onclick = () => act(async () => { if (!valid()) return; const step = Number(form.dataset.flowStep); await save(); renderDetail(); $('#application-form').showFlowStep(step); notify('Данные сохранены.'); });
     form.onsubmit = event => { event.preventDefault(); act(async () => {
       if (!valid()) return;
       if (!form.elements.consent.checked) { notify('Для отправки подтвердите согласие на обработку данных.', true); form.elements.consent.focus(); return; }
-      if (!form.elements.bki_consent.checked) { notify('Для отправки подтвердите согласие на получение кредитного отчёта.', true); form.elements.bki_consent.focus(); return; }
+      if (!form.elements.bki_consent.checked) { notify('Для отправки подтвердите согласие на получение кредитного отчёта.', true); form.showFlowStep(2, true); form.elements.bki_consent.focus(); return; }
       await save(); current = await api('/api/applications/' + encodeURIComponent(current.id) + '/submit','POST',{});
       preview = null; stress = null; await refreshList(); renderDetail(); scrollPageToTop(); notify('Заявка отправлена. Результат и история обновлены.');
     }); };

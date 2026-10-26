@@ -18,7 +18,7 @@
 }
 body {
   margin:0;
-  min-width:320px
+  min-width:0
 }
 button,input,select,textarea {
   font:inherit
@@ -1962,7 +1962,7 @@ footer {
 .login-card .full { justify-content:center; }
 .empty { border:0; border-top:1px solid var(--line); border-radius:0; padding:22px 0; }
 .credit-helper-start { background:transparent; border-block:1px solid var(--line); border-radius:0; padding:18px 0; }
-@media(max-width:760px) { .login-record { display:none; } .back-to-product { display:inline-block; margin:4px 0 10px; } }
+@media(max-width:760px) { .intro h1 { font-size:clamp(28px,8vw,35px); } .login-record { display:none; } .back-to-product { display:inline-block; margin:4px 0 10px; } }
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {
     scroll-behavior:auto!important;
